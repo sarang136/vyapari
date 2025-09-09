@@ -197,7 +197,6 @@ const updateGradebyId = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 }
-
 const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
@@ -260,8 +259,15 @@ const addProduct = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+const logout = async (req, res) => {
+ try {
+  res.clearCookie("token");
+  res.status(200).json({message : "Logout Successfull"})
+ } catch (error) {
+  res.status(500).json({error : error.message})
+ }
+}
 
 
 
-
-module.exports = { postGrade, registerTrader, loginTrader, getGrates, deleteGrade, updateGradebyId, addProduct };
+module.exports = { postGrade, registerTrader, loginTrader, getGrates, deleteGrade, updateGradebyId, addProduct, logout };

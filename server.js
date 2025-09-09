@@ -6,6 +6,15 @@ dotenv.config();
 const cookieParser = require('cookie-parser');
 const traderRouter = require('./routes/traderRoutes');
 const farmerRoutes = require('./routes/farmerRoutes');
+const cors = require('cors');
+
+app.use(cors({
+  origin: (origin, callback) => callback(null, true),
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 
