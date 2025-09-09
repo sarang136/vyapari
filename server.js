@@ -12,13 +12,14 @@ app.use(cookieParser());
 app.use('/trader', traderRouter)
 app.use('/farmer', farmerRoutes)
 
-
+let PORT = process.env.PORT || 5000
+console.log("PORT", PORT)
 
 connectDb()
   .then(() => {
     console.log("Database Connected");
-    app.listen(3000, () => {
-      console.log(`Server started on port 3000`);
+    app.listen(PORT, () => {
+      console.log(`Server started on port ${PORT}`);
     });
   })
   .catch((error) => {
