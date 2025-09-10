@@ -5,7 +5,7 @@ const gradeSchema = new mongoose.Schema(
     {
         grade: {
             type: String,
-            unique : true
+            required: true,
         },
         price: Number,
     },
@@ -30,12 +30,12 @@ const traderSchema = new mongoose.Schema({
         type: String,
         trim: true,
         required: true,
-        unique: true,
+
     },
     traderEmail: {
         type: String,
         required: true,
-        unique: true,
+
         lowercase: true,
         trim: true,
     },
@@ -47,6 +47,14 @@ const traderSchema = new mongoose.Schema({
 
     grades: [gradeSchema],
 
+    vehicle: {
+        vehicleName: {
+            type: String,
+        },
+        vehicleNumber: {
+            type: String,
+        }
+    },
     role: {
         type: String,
         default: "Trader",

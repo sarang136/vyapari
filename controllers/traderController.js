@@ -1,20 +1,18 @@
-
 const Grade = require('../models/gradeSchema');
 const Trader = require('../models/traderSchema');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Farmer = require('../models/farmerSchema')
 const Product = require('../models/productSchema')
-
 const fs = require("fs");
+
 const uploadTheImage = require("../utils/cloudinary");
-const safeData = ["traderName", "traderProfileImage", "traderAddress", "traderArea", "traderContact", "traderEmail"]
 
 const registerTrader = async (req, res) => {
   try {
     const { traderName, traderEmail, traderPassword, traderAddress, traderArea, traderContact } = req.body;
 
-    if (!traderName || !traderEmail || !traderPassword) {
+    if (!traderName || !traderEmail || !traderPassword || !traderAddress || !traderArea || !traderContact) {
       return res.status(400).json({ message: "Name, email and password are required" });
     }
 
@@ -86,6 +84,47 @@ const loginTrader = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const updateTrader = async (req, res) => {
+  try {
+    const trader = req.trader;
+    const { traderEmail, traderAddress, traderArea, traderContact } = req.body;
+    if (traderEmail === trader.traderEmail) {
+      return res.status(403).json({ message: "Old Email and New Email can't be same" })
+    }
+    const updatedData = await Trader.findOneAndUpdate(trader._id, {
+      traderEmail,
+      traderAddress,
+      traderArea,
+      traderContact
+    }, { new: true })
+    await updatedData.save();
+    res.status(200).json({ message: "Data Updated Successfully", updatedData });
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+const changeTraderPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const trader = req.trader;
+    const isSamePassword = await bcrypt.compare(newPassword, trader.traderPassword);
+    if (isSamePassword) {
+      return res.status(403).json({ message: "Old password and new password can't be same" });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const updatedPassword = await Trader.findByIdAndUpdate(trader._id, {
+      traderPassword: hashedPassword
+    }, { new: true });
+    res.status(200).json({
+      message: "Password is successfully updated"
+    });
+
+
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
 const postGrade = async (req, res) => {
   try {
     const trader = req.trader;
@@ -201,16 +240,16 @@ const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const { productName, farmerName, traderName, grade, priceWithoutGrade, totalPrice, quantity, farmerContact } = req.body;
+    const { productName, farmerName, traderName, grade, priceWithoutGrade, totalPrice, quantity, farmerContact, paymentStatus, deliveryWay } = req.body;
 
-    if (!productName || !farmerName || !farmerContact || !traderName || (!grade && !priceWithoutGrade) || !totalPrice || !quantity) {
+    if (!productName || !farmerName || !farmerContact || !traderName || (!grade && !priceWithoutGrade) || !totalPrice || !quantity || !deliveryWay || !paymentStatus) {
       return res.status(407).json({ message: "All fields are required" });
     }
+    console.log("grade", grade);
 
     if (grade && priceWithoutGrade) {
       return res.status(403).json({ message: "Can't send grade and priceWithoutGrade at a time" });
     }
-
     if (!id) {
       return res.status(403).json({ message: "Trader id is required" })
     }
@@ -223,24 +262,21 @@ const addProduct = async (req, res) => {
     if (traderName !== trader.traderName) {
       return res.status(403).json({ message: "Trader Name is not valid" });
     }
-
     const farmerFound = await Farmer.findOne({ farmerContact });
     if (!farmerFound) {
       return res.status(403).json({ message: "Farmer not found" });
     }
-    const farmerNameFound = await Farmer.findOne({farmerName});
-    if(!farmerNameFound){
-      return res.status(403).json({message : "Farmer Name is not valid"})
+    const farmerNameFound = await Farmer.findOne({ farmerName });
+    console.log("farmer", farmerNameFound);
+    if (!farmerNameFound) {
+      return res.status(403).json({ message: "Farmer Name is not valid" })
     }
-
-
     if (grade) {
       const gradeFound = req.trader.grades.find(g => g.grade === grade);
       if (!gradeFound) {
         return res.status(403).json({ message: "Grade is invalid" });
       }
     }
-
     const product = new Product({
       productName,
       farmerName,
@@ -249,25 +285,46 @@ const addProduct = async (req, res) => {
       grade,
       priceWithoutGrade,
       totalPrice,
-      quantity
+      quantity,
+      deliveryWay,
+      paymentStatus,
+      farmerId: farmerNameFound._id,
+      traderId: trader._id
     })
-
     const addedProduct = await product.save();
-    res.status(200).json({ message: "Product added successfully", data : addedProduct });
+    res.status(200).json({ message: "Product added successfully", data: addedProduct });
 
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 }
 const logout = async (req, res) => {
- try {
-  res.clearCookie("token");
-  res.status(200).json({message : "Logout Successfull"})
- } catch (error) {
-  res.status(500).json({error : error.message})
- }
+  try {
+    res.clearCookie("token");
+    res.status(200).json({ message: "Logout Successfull" })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+const addVehicle = async (req, res) => {
+  try {
+    const trader = req.trader;
+    const { vehicleName, vehicleNumber } = req.body;
+    if (!vehicleName || !vehicleNumber) {
+      return res.status(403).json({ message: "Required all the fields" })
+    }
+
+
+    trader.vehicle.vehicleName = vehicleName
+    trader.vehicle.vehicleNumber = vehicleNumber
+
+    await trader.save()
+    res.status(200).json({ message: "Vehicle added successfully", trader })
+
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 }
 
 
-
-module.exports = { postGrade, registerTrader, loginTrader, getGrates, deleteGrade, updateGradebyId, addProduct, logout };
+module.exports = { postGrade, registerTrader, loginTrader, getGrates, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword };

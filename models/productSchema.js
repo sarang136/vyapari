@@ -30,6 +30,26 @@ const productSchema = new mongoose.Schema({
     quantity: {
         type: String,
         required: true
+    },
+    deliveryWay: {
+        type: String,
+        required: true,
+        enum: ["delivered", "dropped (charges 10/kg)"],
+        lowercase: true,
+    },
+    paymentStatus: {
+        type: String,
+        required: true,
+        enum: ["paid", "unpaid"],
+        lowercase: true,
+    },
+    farmerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Farmer'
+    },
+    traderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Trader'
     }
 })
 
