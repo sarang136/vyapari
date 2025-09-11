@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const traderRouter = require('./routes/traderRoutes');
 const farmerRoutes = require('./routes/farmerRoutes');
 const cors = require('cors');
+const adminRouter = require('./routes/adminRoutes');
 
 app.use(cors({
   origin: (origin, callback) => callback(null, true),
@@ -20,6 +21,7 @@ app.use(cookieParser());
 
 app.use('/trader', traderRouter)
 app.use('/farmer', farmerRoutes)
+app.use('/admin', adminRouter)
 
 let PORT = process.env.PORT || 5000
 console.log("PORT", PORT)

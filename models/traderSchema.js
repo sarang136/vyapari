@@ -60,6 +60,10 @@ const traderSchema = new mongoose.Schema({
         default: "Trader",
         set: () => "Trader",
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 },
     {
         timestamps: true,

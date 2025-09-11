@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const farmerSchema =  new mongoose.Schema({
+const farmerSchema = new mongoose.Schema({
 
     farmerName: {
         type: String,
@@ -37,6 +37,10 @@ const farmerSchema =  new mongoose.Schema({
         default: "Farmer",
         set: () => "Farmer",
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 },
     {
         timestamps: true,

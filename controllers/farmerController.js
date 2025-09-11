@@ -59,6 +59,9 @@ const loginFarmer = async (req, res) => {
         if (!farmer) {
             return res.status(403).json({ message: "Farmer not found" });
         }
+        if (farmer.isActive === false) {
+            return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
+        }
         const isPasswordCorrect = await bcrypt.compare(farmerPassword, farmer.farmerPassword)
         if (!isPasswordCorrect) {
             return res.status(409).json({ message: "Password is not valid" });
@@ -158,4 +161,5 @@ const logout = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 }
+
 module.exports = { registerFarmer, loginFarmer, getTraders, updateProfile, changePassword, logout };

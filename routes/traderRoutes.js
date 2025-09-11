@@ -14,9 +14,7 @@ traderRouter.get('/getGrades/:id',authMiddleware, getGrates)
 traderRouter.delete('/deleteGrade/:gradeId',authMiddleware, deleteGrade)
 traderRouter.patch('/updateGradebyId/:gradeId',authMiddleware, updateGradebyId)
 traderRouter.post('/addProduct/:id',authMiddleware, addProduct)
-// /trader/delete-product/:id
 traderRouter.post('/addVehicle',authMiddleware, addVehicle)
 traderRouter.post('/logout', logout)
-
 
 module.exports = traderRouter;

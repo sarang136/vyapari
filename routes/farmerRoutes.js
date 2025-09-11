@@ -10,7 +10,7 @@ farmerRoutes.post('/login',  loginFarmer);
 farmerRoutes.get('/getTraders/:id', authMiddleware, getTraders);
 farmerRoutes.patch('/updateProfile', authMiddleware, updateProfile);
 farmerRoutes.patch('/changePassword', authMiddleware, changePassword);
-farmerRoutes.patch('/logout', authMiddleware, logout);
+farmerRoutes.patch('/logout', logout);
 
 
 module.exports = farmerRoutes;

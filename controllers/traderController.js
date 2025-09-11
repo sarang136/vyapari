@@ -59,6 +59,10 @@ const loginTrader = async (req, res) => {
       return res.status(400).json({ message: "Trader not found" });
     }
 
+     if (trader.isActive === false) {
+            return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
+        }
+
     const isPasswordCorrect = await bcrypt.compare(traderPassword, trader.traderPassword);
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: "Invalid password" });
