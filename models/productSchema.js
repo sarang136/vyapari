@@ -34,7 +34,7 @@ const productSchema = new mongoose.Schema({
     deliveryWay: {
         type: String,
         required: true,
-        enum: ["delivered", "dropped (charges 10/kg)"],
+        enum: ["delivered", "dropped"],
         lowercase: true,
     },
     paymentStatus: {
@@ -51,7 +51,7 @@ const productSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Trader'
     }
-})
+}, { timestamps: true })
 
 
 module.exports = mongoose.model('Product', productSchema)

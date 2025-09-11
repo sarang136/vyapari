@@ -150,5 +150,12 @@ const getTraders = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 }
-
-module.exports = { registerFarmer, loginFarmer, getTraders, updateProfile, changePassword };
+const logout = async (req, res) => {
+    try {
+        res.clearCookie("token");
+        res.status(200).json({ message: "logout successfull" })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+}
+module.exports = { registerFarmer, loginFarmer, getTraders, updateProfile, changePassword, logout };
