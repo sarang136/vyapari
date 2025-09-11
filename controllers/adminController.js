@@ -52,6 +52,7 @@ const login = async (req, res) => {
             .status(200)
             .json({
                 message: "Admin logged in successfully",
+                token: token,
                 adminExists,
             });
     } catch (error) {
