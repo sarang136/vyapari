@@ -9,8 +9,8 @@ traderRouter.post('/register', upload.single("traderProfileImage"), registerTrad
 traderRouter.post('/login', loginTrader);
 traderRouter.patch('/updateTrader',authMiddleware, updateTrader);
 traderRouter.patch('/changeTraderPassword',authMiddleware, changeTraderPassword);
-traderRouter.post('/post-grade/:id', authMiddleware, postGrade);
-traderRouter.get('/getGrades/:id',authMiddleware, getGrates)
+// traderRouter.post('/post-grade/:id', authMiddleware, postGrade);
+// traderRouter.get('/getGrades/:id',authMiddleware, getGrates)
 traderRouter.delete('/deleteGrade/:gradeId',authMiddleware, deleteGrade)
 traderRouter.patch('/updateGradebyId/:gradeId',authMiddleware, updateGradebyId)
 traderRouter.post('/addProduct/:id',authMiddleware, addProduct)

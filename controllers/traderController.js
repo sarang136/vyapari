@@ -129,55 +129,55 @@ const changeTraderPassword = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
-const postGrade = async (req, res) => {
-  try {
-    const trader = req.trader;
-    const { grade, price } = req.body;
+// const postGrade = async (req, res) => {
+//   try {
+//     const trader = req.trader;
+//     const { grade, price } = req.body;
 
-    if (!grade || !price) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+//     if (!grade || !price) {
+//       return res.status(400).json({ message: "All fields are required" });
+//     }
 
 
-    const gradeAlreadyExists = trader.grades.some(
-      (g) => g.grade.toLowerCase() === grade.toLowerCase()
-    );
+//     const gradeAlreadyExists = trader.grades.some(
+//       (g) => g.grade.toLowerCase() === grade.toLowerCase()
+//     );
 
-    if (gradeAlreadyExists) {
-      return res.status(400).json({ message: "Grade already exists" });
-    }
+//     if (gradeAlreadyExists) {
+//       return res.status(400).json({ message: "Grade already exists" });
+//     }
 
-    trader.grades.push({ grade: grade, price: price });
+//     trader.grades.push({ grade: grade, price: price });
 
-    await trader.save();
+//     await trader.save();
 
-    res.status(200).json({ message: "Grade added successfully", grades: trader.grades });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-const getGrates = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const trader = req.trader;
-    console.log("id", id)
-    console.log("trader._id", trader._id)
-    if (id !== trader._id.toString()) {
-      return res.status(403).json({ message: "trader id is required" })
-    }
-    const gradesFound = await Trader.findById(trader._id);
-    console.log(gradesFound);
-    if (!gradesFound) {
-      return res.status(403).json({ message: "Trader not found" })
-    }
-    if (gradesFound.grades.length === 0) {
-      return res.status(200).json({ message: " No grades found" })
-    }
-    res.status(200).json({ message: gradesFound?.grades })
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-}
+//     res.status(200).json({ message: "Grade added successfully", grades: trader.grades });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+// const getGrates = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const trader = req.trader;
+//     console.log("id", id)
+//     console.log("trader._id", trader._id)
+//     if (id !== trader._id.toString()) {
+//       return res.status(403).json({ message: "trader id is required" })
+//     }
+//     const gradesFound = await Trader.findById(trader._id);
+//     console.log(gradesFound);
+//     if (!gradesFound) {
+//       return res.status(403).json({ message: "Trader not found" })
+//     }
+//     if (gradesFound.grades.length === 0) {
+//       return res.status(200).json({ message: " No grades found" })
+//     }
+//     res.status(200).json({ message: gradesFound?.grades })
+//   } catch (error) {
+//     res.status(500).json({ error: error.message })
+//   }
+// }
 const deleteGrade = async (req, res) => {
   try {
     const { gradeId } = req.params;
@@ -244,27 +244,8 @@ const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const { productName, farmerName, traderName, grade, gradePrice, priceWithoutGrade, totalPrice, quantity, farmerContact, paymentStatus, deliveryWay } = req.body;
+    const products = Array.isArray(req.body) ? req.body : [req.body]; // Handle single or multiple
 
-  
-    if (
-      !productName ||
-      !farmerName ||
-      !farmerContact ||
-      !traderName ||
-      (!grade && !priceWithoutGrade) ||
-      (grade && !gradePrice) ||
-      !totalPrice ||
-      !quantity ||
-      !deliveryWay ||
-      !paymentStatus
-    ) {
-      return res.status(400).json({ message: "All required fields must be filled properly" });
-    }
-
-    if (grade && priceWithoutGrade) {
-      return res.status(403).json({ message: "Can't send grade and priceWithoutGrade at a time" });
-    }
     if (!id) {
       return res.status(403).json({ message: "Trader id is required" });
     }
@@ -274,32 +255,76 @@ const addProduct = async (req, res) => {
     if (id !== trader._id.toString()) {
       return res.status(403).json({ message: "Trader id is not valid" });
     }
-    if (traderName !== trader.traderName) {
-      return res.status(403).json({ message: "Trader Name is not valid" });
+
+    let savedProducts = [];
+
+    for (const productData of products) {
+      const {
+        productName,
+        farmerName,
+        traderName,
+        grade,
+        gradePrice,
+        priceWithoutGrade,
+        totalPrice,
+        quantity,
+        farmerContact,
+        paymentStatus,
+        deliveryWay
+      } = productData;
+
+      // 🔎 Validations
+      if (
+        !productName ||
+        !farmerName ||
+        !farmerContact ||
+        !traderName ||
+        (!grade && !priceWithoutGrade) ||
+        (grade && !gradePrice) ||
+        !totalPrice ||
+        !quantity ||
+        !deliveryWay ||
+        !paymentStatus
+      ) {
+        return res.status(400).json({
+          message: "All required fields must be filled properly",
+          invalidProduct: productData,
+        });
+      }
+
+      if (traderName !== trader.traderName) {
+        return res.status(403).json({ message: "Trader Name is not valid" });
+      }
+
+      const farmerFound = await Farmer.findOne({ farmerContact, farmerName });
+      if (!farmerFound) {
+        return res.status(403).json({ message: "Farmer not found or invalid details" });
+      }
+
+      const product = new Product({
+        productName,
+        farmerName,
+        farmerContact,
+        traderName,
+        grade,
+        gradePrice,
+        priceWithoutGrade,
+        totalPrice,
+        quantity,
+        deliveryWay,
+        paymentStatus,
+        farmerId: farmerFound._id,
+        traderId: trader._id,
+      });
+
+      const addedProduct = await product.save();
+      savedProducts.push(addedProduct);
     }
 
-    const farmerFound = await Farmer.findOne({ farmerContact, farmerName });
-    if (!farmerFound) {
-      return res.status(403).json({ message: "Farmer not found or invalid details" });
-    }
-
-    const product = new Product({
-      productName,
-      farmerName,
-      farmerContact,
-      traderName,
-      grade,
-      gradePrice,
-      priceWithoutGrade,
-      totalPrice,
-      quantity,
-      deliveryWay,
-      paymentStatus,
-      farmerId: farmerFound._id, 
-      traderId: trader._id
+    res.status(200).json({
+      message: `${savedProducts.length} product(s) added successfully`,
+      data: savedProducts,
     });
-    const addedProduct = await product.save();
-    res.status(200).json({ message: "Product added successfully", data: addedProduct });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -334,4 +359,4 @@ const addVehicle = async (req, res) => {
 }
 
 
-module.exports = { postGrade, registerTrader, loginTrader, getGrates, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword };
+module.exports = {  registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword };

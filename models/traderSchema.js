@@ -45,7 +45,7 @@ const traderSchema = new mongoose.Schema({
         trim: true,
     },
 
-    grades: [gradeSchema],
+    // grades: [gradeSchema],
 
     vehicle: {
         vehicleName: {
