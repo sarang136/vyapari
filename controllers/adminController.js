@@ -52,6 +52,7 @@ const login = async (req, res) => {
             sameSite: "None",        
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
+        res.status(200).json({message : "logged In successfull", data : adminExists})
     } catch (error) {
         // 
         res.status(500).json({ error: error.message })
