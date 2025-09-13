@@ -2,9 +2,8 @@ const Admin = require('../models/adminSchema');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Trader = require('../models/traderSchema');
+const Product = require('../models/productSchema');
 const Farmer = require('../models/farmerSchema');
-
-
 
 const registerAdmin = async (req, res) => {
     try {
@@ -24,7 +23,7 @@ const registerAdmin = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
-}
+};
 const login = async (req, res) => {
     try {
         const { adminContact, adminPassword } = req.body;
@@ -58,7 +57,7 @@ const login = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
-}
+};
 const getAllTraders = async (req, res) => {
     try {
         const admin = req.admin;
@@ -73,7 +72,7 @@ const getAllTraders = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
-}
+};
 const getAllFarmers = async (req, res) => {
     try {
         const admin = req.admin;
@@ -88,32 +87,14 @@ const getAllFarmers = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
-// const blockTrader = async (req, res) => {
-//     try {
-//         const admin = req.admin;
-//         const { traderId } = req.params;
-//         // console.log("traderId", traderId);
-//         if (!admin) {
-//             return res.status(403).json({ message: "Admin not valid" });
-//         }
-//         const trader = await Trader.findById(traderId);
-//         trader.isActive = false;
-//         await trader.save();
-//         // console.log("trader", trader)
-//         res.status(200).json({message : `${trader.traderName} has been successfully blocked`})
-
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// }
+};
 const blockTrader = async (req, res) => {
     try {
         const admin = req.admin;
         const { traderId, status } = req.params;
-        
-        if(!traderId){
-            return res.status(404).json({message : "Trader id is required"})
+
+        if (!traderId) {
+            return res.status(404).json({ message: "Trader id is required" })
         }
         if (!admin) {
             return res.status(400).json({ message: "Admin is not valid" });
@@ -144,9 +125,9 @@ const blockFarmer = async (req, res) => {
     try {
         const admin = req.admin;
         const { farmerId, status } = req.params;
-        
-        if(!farmerId){
-            return res.status(404).json({message : "Trader id is required"})
+
+        if (!farmerId) {
+            return res.status(404).json({ message: "Trader id is required" })
         }
         if (!admin) {
             return res.status(400).json({ message: "Admin is not valid" });
@@ -173,7 +154,18 @@ const blockFarmer = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+const getAllProducts = async (req, res) => {
+    try {
+        const products = await Product.find({});
+        if (!products || (products.length === 0)) {
+            return res.status(200).json({ message: "No products found" });
+        }
+        res.status(200).json({ message: "success", products: products });
 
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 const logout = async (req, res) => {
     try {
         res.clearCookie("token");
@@ -181,7 +173,5 @@ const logout = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
-}
-
-
-module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, logout }
+};
+module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, logout }

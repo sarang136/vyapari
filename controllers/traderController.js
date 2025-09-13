@@ -59,9 +59,9 @@ const loginTrader = async (req, res) => {
       return res.status(400).json({ message: "Trader not found" });
     }
 
-     if (trader.isActive === false) {
-            return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
-        }
+    if (trader.isActive === false) {
+      return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
+    }
 
     const isPasswordCorrect = await bcrypt.compare(traderPassword, trader.traderPassword);
     if (!isPasswordCorrect) {
@@ -244,21 +244,32 @@ const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const { productName, farmerName, traderName, grade, priceWithoutGrade, totalPrice, quantity, farmerContact, paymentStatus, deliveryWay } = req.body;
+    const { productName, farmerName, traderName, grade, gradePrice, priceWithoutGrade, totalPrice, quantity, farmerContact, paymentStatus, deliveryWay } = req.body;
 
-    if (!productName || !farmerName || !farmerContact || !traderName || (!grade && !priceWithoutGrade) || !totalPrice || !quantity || !deliveryWay || !paymentStatus) {
-      return res.status(407).json({ message: "All fields are required" });
+  
+    if (
+      !productName ||
+      !farmerName ||
+      !farmerContact ||
+      !traderName ||
+      (!grade && !priceWithoutGrade) ||
+      (grade && !gradePrice) ||
+      !totalPrice ||
+      !quantity ||
+      !deliveryWay ||
+      !paymentStatus
+    ) {
+      return res.status(400).json({ message: "All required fields must be filled properly" });
     }
-    console.log("grade", grade);
 
     if (grade && priceWithoutGrade) {
       return res.status(403).json({ message: "Can't send grade and priceWithoutGrade at a time" });
     }
     if (!id) {
-      return res.status(403).json({ message: "Trader id is required" })
+      return res.status(403).json({ message: "Trader id is required" });
     }
     if (!trader) {
-      return res.status(402).json({ message: "Trader not found" })
+      return res.status(402).json({ message: "Trader not found" });
     }
     if (id !== trader._id.toString()) {
       return res.status(403).json({ message: "Trader id is not valid" });
@@ -266,42 +277,34 @@ const addProduct = async (req, res) => {
     if (traderName !== trader.traderName) {
       return res.status(403).json({ message: "Trader Name is not valid" });
     }
-    const farmerFound = await Farmer.findOne({ farmerContact });
+
+    const farmerFound = await Farmer.findOne({ farmerContact, farmerName });
     if (!farmerFound) {
-      return res.status(403).json({ message: "Farmer not found" });
+      return res.status(403).json({ message: "Farmer not found or invalid details" });
     }
-    const farmerNameFound = await Farmer.findOne({ farmerName });
-    console.log("farmer", farmerNameFound);
-    if (!farmerNameFound) {
-      return res.status(403).json({ message: "Farmer Name is not valid" })
-    }
-    if (grade) {
-      const gradeFound = req.trader.grades.find(g => g.grade === grade);
-      if (!gradeFound) {
-        return res.status(403).json({ message: "Grade is invalid" });
-      }
-    }
+
     const product = new Product({
       productName,
       farmerName,
       farmerContact,
       traderName,
       grade,
+      gradePrice,
       priceWithoutGrade,
       totalPrice,
       quantity,
       deliveryWay,
       paymentStatus,
-      farmerId: farmerNameFound._id,
+      farmerId: farmerFound._id, 
       traderId: trader._id
-    })
+    });
     const addedProduct = await product.save();
     res.status(200).json({ message: "Product added successfully", data: addedProduct });
 
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 const logout = async (req, res) => {
   try {
     res.clearCookie("token");

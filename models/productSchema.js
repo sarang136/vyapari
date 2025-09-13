@@ -20,6 +20,9 @@ const productSchema = new mongoose.Schema({
     grade: {
         type: String,
     },
+    gradePrice: {
+        type : String
+    },
     priceWithoutGrade: {
         type: String,
     },
