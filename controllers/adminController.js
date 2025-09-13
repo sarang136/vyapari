@@ -46,14 +46,12 @@ const login = async (req, res) => {
         );
         console.log("token", token);
 
-        res
-            .cookie("token", token, { httpOnly: true, secure: true, maxAge: 30 * 24 * 60 * 60 * 1000 })
-            .status(200)
-            .json({
-                message: "Admin logged in successfully",
-                token: token,
-                adminExists,
-            });
+        res.cookie("token", token, {
+            httpOnly: true,         
+            secure: true,            
+            sameSite: "None",        
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        });
     } catch (error) {
         res.status(500).json({ error: error.message })
     }
