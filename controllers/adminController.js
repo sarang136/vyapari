@@ -49,12 +49,12 @@ const login = async (req, res) => {
         console.log("token", token);
 
         res.cookie("token", token, {
-            httpOnly: true,         
-            secure: true,            
-            sameSite: "None",        
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
-        res.status(200).json({message : "logged In successfull", data : adminExists})
+        res.status(200).json({ message: "logged In successfull", data: adminExists })
     } catch (error) {
         // 
         res.status(500).json({ error: error.message })
@@ -159,7 +159,7 @@ const blockFarmer = async (req, res) => {
 const getAllProducts = async (req, res) => {
     try {
         const products = await Product.find({})
-        .populate('traderId', "traderContact")
+            .populate('traderId', "traderContact")
         if (!products || (products.length === 0)) {
             return res.status(200).json({ message: "No products found" });
         }
