@@ -156,6 +156,30 @@ const blockFarmer = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+const deleteFarmer = async(req, res) => {
+    try {
+        const {farmerId} = req.params;
+        const deleted = await Farmer.findByIdAndDelete(farmerId);
+        if(!deleted){
+            return res.status(404).json({ message: "Farmer not found" });
+        }
+        res.status(200).json({message: "Farmer Deleted Successfully"});
+    } catch (error) {
+        res.status(500).json({error : error.message})
+    }
+}
+const deleteTrader = async(req, res) => {
+    try {
+        const {traderId} = req.params;
+        const deleted = await Trader.findByIdAndDelete(traderId);
+        if(!deleted){
+            return res.status(404).json({ message: "Trader not found" });
+        }
+        res.status(200).json({message: "Trader Deleted Successfully"});
+    } catch (error) {
+        res.status(500).json({error : error.message})
+    }
+}
 const getAllProducts = async (req, res) => {
     try {
         const products = await Product.find({})
@@ -177,4 +201,4 @@ const logout = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 };
-module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, logout }
+module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, deleteFarmer, deleteTrader, logout }
