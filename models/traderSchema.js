@@ -1,16 +1,16 @@
 const mongoose = require("mongoose");
 
 
-const gradeSchema = new mongoose.Schema(
-    {
-        grade: {
-            type: String,
-            required: true,
-        },
-        price: Number,
-    },
-    { timestamps: true }
-);
+// const gradeSchema = new mongoose.Schema(
+//     {
+//         grade: {
+//             type: String,
+//             required: true,
+//         },
+//         price: Number,
+//     },
+//     { timestamps: true }
+// );
 
 const traderSchema = new mongoose.Schema({
     traderName: {

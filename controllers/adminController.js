@@ -5,6 +5,8 @@ const Trader = require('../models/traderSchema');
 const Product = require('../models/productSchema');
 const Farmer = require('../models/farmerSchema');
 
+// const Select_for_Traders = [""]
+
 const registerAdmin = async (req, res) => {
     try {
         const { adminName, adminContact, adminEmail, adminPassword } = req.body;
@@ -64,7 +66,7 @@ const getAllTraders = async (req, res) => {
         if (!admin) {
             return res.status(400).json({ message: "Admin not valid" });
         }
-        const getTraders = await Trader.find({});
+        const getTraders = await Trader.find({}, "-traderPassword");
         if (!getTraders) {
             return res.status(403).json({ message: "No traders found" });
         }
@@ -79,7 +81,7 @@ const getAllFarmers = async (req, res) => {
         if (!admin) {
             return res.status(400).json({ message: "Admin not valid" });
         }
-        const farmers = await Farmer.find({});
+        const farmers = await Farmer.find({}, "-farmerPassword");
         if (!farmers) {
             return res.status(200).json({ message: "No farmers found" });
         }
@@ -155,8 +157,12 @@ const blockFarmer = async (req, res) => {
     }
 };
 const getAllProducts = async (req, res) => {
+    const POPULATE_FARMER =  ["farmerName", "farmerContact", "farmerEmail"]
+    const POPULATE_TRADER = ["traderName", "traderContact", "traderEmail"]
     try {
-        const products = await Product.find({});
+        const products = await Product.find({})
+        .populate('farmerId', POPULATE_FARMER)
+        .populate('traderId', POPULATE_TRADER)
         if (!products || (products.length === 0)) {
             return res.status(200).json({ message: "No products found" });
         }
