@@ -157,12 +157,9 @@ const blockFarmer = async (req, res) => {
     }
 };
 const getAllProducts = async (req, res) => {
-    const POPULATE_FARMER =  ["farmerName", "farmerContact", "farmerEmail"]
-    const POPULATE_TRADER = ["traderName", "traderContact", "traderEmail"]
     try {
         const products = await Product.find({})
-        .populate('farmerId', POPULATE_FARMER)
-        .populate('traderId', POPULATE_TRADER)
+        .populate('traderId', "traderContact")
         if (!products || (products.length === 0)) {
             return res.status(200).json({ message: "No products found" });
         }

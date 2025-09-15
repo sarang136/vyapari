@@ -5,6 +5,18 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    farmerContact: {
+        type: String,
+        required: true,
+    },
+    farmerName: {
+        type: String,
+        required: true,
+    },
+    traderName: {
+        type: String,
+        required: true,
+    },
     grade: {
         type: String,
     },

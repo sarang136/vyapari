@@ -244,7 +244,7 @@ const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const products = Array.isArray(req.body) ? req.body : [req.body]; // Handle single or multiple
+    const products = Array.isArray(req.body) ? req.body : [req.body]; 
 
     if (!id) {
       return res.status(403).json({ message: "Trader id is required" });
