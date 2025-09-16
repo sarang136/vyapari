@@ -4,8 +4,15 @@ const jwt = require('jsonwebtoken');
 const Trader = require('../models/traderSchema');
 const Product = require('../models/productSchema');
 const Farmer = require('../models/farmerSchema');
+const Otp = require('../models/otpSchema');
+const twilio = require('twilio');
 
 // const Select_for_Traders = [""]
+const account_sid = process.env.ACCOUNT_SID
+const auth_token = process.env.AUTH_TOKEN
+
+const twilioClient = new twilio(account_sid, auth_token)
+
 
 const registerAdmin = async (req, res) => {
     try {
@@ -26,27 +33,59 @@ const registerAdmin = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 };
+const sendOtp = async (req, res) => {
+    try {
+        const { contact } = req.body;
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        // // const traderExists = await Trader.find({traderContact});
+        // if(!traderExists){
+        //   return res.status(400).json({message : "Trader does not exists"});
+        // }
+        await Otp.findOneAndUpdate(
+            { contact },
+            { otp },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+
+        await twilioClient.messages.create({
+            body: `Otp - ${otp}`,
+            from: process.env.PHONE_NUMBER,
+            to: contact.startsWith('+') ? contact : `+91${contact}`,
+        })
+        res.status(200).json({ message: `Otp - ${otp}` })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+}
 const login = async (req, res) => {
     try {
-        const { adminContact, adminPassword } = req.body;
-        console.log("adminPassword", adminPassword)
-        if (!adminContact || !adminPassword) {
+        const { adminContact, otp } = req.body;
+        // console.log("adminPassword", adminPassword)
+        if (!adminContact || !otp) {
             return res.status(403).json({ message: "All feilds are required" });
         }
         const adminExists = await Admin.findOne({ adminContact });
         if (!adminExists) {
             return res.status(403).json({ message: "Admin does not exists." })
         }
-        const isPasswordValid = await bcrypt.compare(adminPassword, adminExists.adminPassword);
-        if (!isPasswordValid) {
-            return res.status(400).json({ message: "Invalid credentials" })
+
+        const isOtpCorrect = await Otp.findOne({
+            contact: adminContact, otp
+        })
+
+        if (!isOtpCorrect) {
+            return res.status(403).json({ message: "Invalid OTP" });
         }
-        adminExists.adminPassword = undefined;
+        
+        await Otp.deleteOne({ contact: adminContact });
+
         const token = jwt.sign(
             { _id: adminExists._id },
             process.env.JWT_SECRET,
         );
         console.log("token", token);
+
+        adminExists.adminPassword = undefined;
 
         res.cookie("token", token, {
             httpOnly: true,
@@ -156,29 +195,28 @@ const blockFarmer = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-const deleteFarmer = async(req, res) => {
+const deleteFarmer = async (req, res) => {
     try {
-        const {farmerId} = req.params;
+        const { farmerId } = req.params;
         const deleted = await Farmer.findByIdAndDelete(farmerId);
-        if(!deleted){
+        if (!deleted) {
             return res.status(404).json({ message: "Farmer not found" });
         }
-        res.status(200).json({message: "Farmer Deleted Successfully"});
+        res.status(200).json({ message: "Farmer Deleted Successfully" });
     } catch (error) {
-        res.status(500).json({error : error.message})
+        res.status(500).json({ error: error.message })
     }
 }
-
-const deleteTrader = async(req, res) => {
+const deleteTrader = async (req, res) => {
     try {
-        const {traderId} = req.params;
+        const { traderId } = req.params;
         const deleted = await Trader.findByIdAndDelete(traderId);
-        if(!deleted){
+        if (!deleted) {
             return res.status(404).json({ message: "Trader not found" });
         }
-        res.status(200).json({message: "Trader Deleted Successfully"});
+        res.status(200).json({ message: "Trader Deleted Successfully" });
     } catch (error) {
-        res.status(500).json({error : error.message})
+        res.status(500).json({ error: error.message })
     }
 }
 const getAllProducts = async (req, res) => {
@@ -202,4 +240,5 @@ const logout = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 };
-module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, deleteFarmer, deleteTrader, logout }
+
+module.exports = { registerAdmin, sendOtp, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, deleteFarmer, deleteTrader, logout }

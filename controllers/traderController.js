@@ -5,8 +5,15 @@ const jwt = require('jsonwebtoken');
 const Farmer = require('../models/farmerSchema')
 const Product = require('../models/productSchema')
 const fs = require("fs");
-
+const Otp = require('../models/otpSchema');
+const twilio = require('twilio');
 const uploadTheImage = require("../utils/cloudinary");
+
+const account_sid = process.env.ACCOUNT_SID
+const auth_token = process.env.AUTH_TOKEN
+
+const twilioClient = new twilio(account_sid, auth_token)
+
 
 const registerTrader = async (req, res) => {
   try {
@@ -50,9 +57,33 @@ const registerTrader = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const sendOtp = async (req, res) => {
+  try {
+    const { contact } = req.body;
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    // // const traderExists = await Trader.find({traderContact});
+    // if(!traderExists){
+    //   return res.status(400).json({message : "Trader does not exists"});
+    // }
+    await Otp.findOneAndUpdate(
+      { contact },
+      { otp },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    )
+
+    await twilioClient.messages.create({
+      body: `Otp - ${otp}`,
+      from: process.env.PHONE_NUMBER,
+      to: contact.startsWith('+') ? contact : `+91${contact}`,
+    })
+    res.status(200).json({ message: `Otp - ${otp}` })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
 const loginTrader = async (req, res) => {
   try {
-    const { traderContact, traderPassword } = req.body;
+    const { traderContact, otp } = req.body;
 
     const trader = await Trader.findOne({ traderContact }).select("+traderPassword");
     if (!trader) {
@@ -60,29 +91,33 @@ const loginTrader = async (req, res) => {
     }
 
     if (trader.isActive === false) {
-      return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
+      return res.status(403).json({ message: "Oops! You have been blocked by the admin" });
     }
 
-    const isPasswordCorrect = await bcrypt.compare(traderPassword, trader.traderPassword);
-    if (!isPasswordCorrect) {
-      return res.status(400).json({ message: "Invalid password" });
+    const isOtpCorrect = await Otp.findOne({ contact: traderContact, otp });
+    if (!isOtpCorrect) {
+      return res.status(403).json({ message: "Invalid OTP" });
     }
 
-    const token = jwt.sign(
-      { _id: trader._id },
-      process.env.JWT_SECRET,
-    );
+    // Remove OTP after success
+    await Otp.deleteOne({ contact: traderContact });
 
-    console.log("token", token);
+    const token = jwt.sign({ _id: trader._id }, process.env.JWT_SECRET);
+
     trader.traderPassword = undefined;
 
     res
-      .cookie("token", token, { httpOnly: true, secure: true, maxAge: 30 * 24 * 60 * 60 * 1000 })
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60 * 1000
+      })
       .status(200)
       .json({
         message: "Trader logged in successfully",
         trader,
       });
+
   } catch (error) {
     console.error("Error in loginTrader:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -244,7 +279,7 @@ const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const products = Array.isArray(req.body) ? req.body : [req.body]; 
+    const products = Array.isArray(req.body) ? req.body : [req.body];
 
     if (!id) {
       return res.status(403).json({ message: "Trader id is required" });
@@ -273,7 +308,7 @@ const addProduct = async (req, res) => {
         deliveryWay
       } = productData;
 
-  
+
       if (
         !productName ||
         !farmerName ||
@@ -359,4 +394,4 @@ const addVehicle = async (req, res) => {
 }
 
 
-module.exports = {  registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword };
+module.exports = { registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, sendOtp };

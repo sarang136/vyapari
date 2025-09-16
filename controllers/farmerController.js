@@ -6,6 +6,12 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SAFE_DATA = ["traderName", "traderProfileImage", "traderAddress", "traderContact", "traderEmail"]
 const SELECTED = ["productName", "grade", "totalPrice", "quantity", "traderId", "priceWithoutGrade"]
+const Otp = require('../models/otpSchema');
+const twilio = require('twilio');
+const account_sid = process.env.ACCOUNT_SID
+const auth_token = process.env.AUTH_TOKEN
+const twilioClient = new twilio(account_sid, auth_token)
+
 
 const registerFarmer = async (req, res) => {
     try {
@@ -49,33 +55,59 @@ const registerFarmer = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+const sendOtp = async (req, res) => {
+    try {
+        const { contact } = req.body;
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        // // const traderExists = await Trader.find({traderContact});
+        // if(!traderExists){
+        //   return res.status(400).json({message : "Trader does not exists"});
+        // }
+        await Otp.findOneAndUpdate(
+            { contact },
+            { otp },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+
+        await twilioClient.messages.create({
+            body: `Otp - ${otp}`,
+            from: process.env.PHONE_NUMBER,
+            to: contact.startsWith('+') ? contact : `+91${contact}`,
+        })
+        res.status(200).json({ message: `Otp - ${otp}` })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+}
 const loginFarmer = async (req, res) => {
     try {
-        const { farmerContact, farmerPassword } = req.body;
-        if (!farmerContact || !farmerPassword) {
-            return res.status(408).json({ message: "All fields are required" });
+        const { farmerContact, otp } = req.body;
+        if (!farmerContact || !otp) {
+            return res.status(400).json({ message: "All fields are required" });
         }
         const farmer = await Farmer.findOne({ farmerContact });
         if (!farmer) {
             return res.status(403).json({ message: "Farmer not found" });
         }
+        const isOtpCorrect = await Otp.findOne({ contact: farmerContact, otp });
+        if (!isOtpCorrect) {
+            return res.status(403).json({ message: "Invalid OTP" });
+        }
+        await Otp.deleteOne({ contact: farmerContact });
         if (farmer.isActive === false) {
             return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
         }
-        const isPasswordCorrect = await bcrypt.compare(farmerPassword, farmer.farmerPassword)
-        if (!isPasswordCorrect) {
-            return res.status(409).json({ message: "Password is not valid" });
-        }
         const token = await jwt.sign({ _id: farmer._id }, process.env.JWT_SECRET);
+
         console.log("token", token)
         farmer.farmerPassword = undefined;
-        res
-            .cookie("token", token, { httpOnly: true, secure: true, maxAge: 30 * 24 * 60 * 60 * 1000 })
-            .status(200)
-            .json({
-                message: "Trader logged in successfully",
-                farmer,
-            });
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+        res.status(200).json({ message: "Logged In successfull", farmer: farmer })
 
     } catch (error) {
         res.status(500).json({ error: error.message })
@@ -162,4 +194,4 @@ const logout = async (req, res) => {
     }
 }
 
-module.exports = { registerFarmer, loginFarmer, getTraders, updateProfile, changePassword, logout };
+module.exports = { registerFarmer, sendOtp, loginFarmer, getTraders, updateProfile, changePassword, logout };
