@@ -273,7 +273,7 @@ const addProduct = async (req, res) => {
         deliveryWay
       } = productData;
 
-      // 🔎 Validations
+  
       if (
         !productName ||
         !farmerName ||
