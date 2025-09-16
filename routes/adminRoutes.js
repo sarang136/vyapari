@@ -5,7 +5,7 @@ const { sendOtp } = require('../controllers/adminController');
 const adminRouter  =  express.Router();
 
 adminRouter.post('/register', registerAdmin)
-adminRouter.post('/send-otp', sendOtp)
+// adminRouter.post('/send-otp', sendOtp)
 adminRouter.post('/login', login)
 adminRouter.get('/get-all-traders', authMiddleware, getAllTraders)
 adminRouter.get('/get-all-farmers', authMiddleware, getAllFarmers)
