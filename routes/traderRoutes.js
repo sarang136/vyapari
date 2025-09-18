@@ -7,6 +7,8 @@ const traderRouter = express.Router();
 
 traderRouter.post('/register', upload.single("traderProfileImage"), registerTrader)
 traderRouter.post('/send-otp', sendOtp)
+
+
 traderRouter.post('/login', loginTrader);
 traderRouter.patch('/updateTrader',authMiddleware, updateTrader);
 traderRouter.patch('/changeTraderPassword',authMiddleware, changeTraderPassword);
