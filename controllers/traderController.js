@@ -82,9 +82,9 @@ const sendOtp = async (req, res) => {
 }
 const loginTrader = async (req, res) => {
   try {
-    const { traderContact, otp } = req.body;
+    const { contact, otp } = req.body;
 
-    const trader = await Trader.findOne({ traderContact }).select("+traderPassword");
+    const trader = await Trader.findOne({ traderContact : contact}).select("+traderPassword");
     if (!trader) {
       return res.status(400).json({ message: "Trader not found" });
     }
@@ -93,13 +93,12 @@ const loginTrader = async (req, res) => {
       return res.status(403).json({ message: "Oops! You have been blocked by the admin" });
     }
 
-    const isOtpCorrect = await Otp.findOne({ contact: traderContact, otp });
+    const isOtpCorrect = await Otp.findOne({ contact, otp });
     if (!isOtpCorrect) {
       return res.status(403).json({ message: "Invalid OTP" });
     }
 
-    // Remove OTP after success
-    await Otp.deleteOne({ contact: traderContact });
+    await Otp.deleteOne({ contact });
 
     const token = jwt.sign({ _id: trader._id }, process.env.JWT_SECRET);
 

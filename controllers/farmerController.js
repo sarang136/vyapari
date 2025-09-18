@@ -80,19 +80,19 @@ const sendOtp = async (req, res) => {
 }
 const loginFarmer = async (req, res) => {
     try {
-        const { farmerContact, otp } = req.body;
-        if (!farmerContact || !otp) {
+        const { contact, otp } = req.body;
+        if (!contact || !otp) {
             return res.status(400).json({ message: "All fields are required" });
         }
-        const farmer = await Farmer.findOne({ farmerContact });
+        const farmer = await Farmer.findOne({ farmerContact: contact });
         if (!farmer) {
             return res.status(403).json({ message: "Farmer not found" });
         }
-        const isOtpCorrect = await Otp.findOne({ contact: farmerContact, otp });
+        const isOtpCorrect = await Otp.findOne({ contact, otp });
         if (!isOtpCorrect) {
             return res.status(403).json({ message: "Invalid OTP" });
         }
-        await Otp.deleteOne({ contact: farmerContact });
+        await Otp.deleteOne({ contact });
         if (farmer.isActive === false) {
             return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
         }
