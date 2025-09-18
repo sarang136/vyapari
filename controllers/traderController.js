@@ -19,7 +19,7 @@ const registerTrader = async (req, res) => {
   try {
     const { traderName, traderEmail, traderPassword, traderAddress, traderArea, traderContact } = req.body;
 
-    if (!traderName || !traderEmail || !traderPassword || !traderAddress || !traderArea || !traderContact) {
+    if (!traderName || !traderEmail || !traderAddress || !traderArea || !traderContact) {
       return res.status(400).json({ message: "Name, email and password are required" });
     }
 
@@ -29,7 +29,6 @@ const registerTrader = async (req, res) => {
       return res.status(409).json({ message: "User already Exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(traderPassword, 10);
 
     let traderProfileImage = null;
     if (req.file) {
@@ -43,7 +42,7 @@ const registerTrader = async (req, res) => {
     const trader = new Trader({
       traderName,
       traderEmail,
-      traderPassword: hashedPassword,
+      traderPassword,
       traderAddress,
       traderArea,
       traderContact,
@@ -51,7 +50,7 @@ const registerTrader = async (req, res) => {
     });
 
     await trader.save();
-    res.status(201).json({ message: "Trader registered successfully" });
+    res.status(201).json({ message: "Trader registered successfully", data : trader });
   } catch (error) {
     console.error("Error in registerTrader:", error);
     res.status(500).json({ message: "Server error", error: error.message });

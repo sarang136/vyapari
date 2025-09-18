@@ -17,7 +17,7 @@ const registerFarmer = async (req, res) => {
     try {
         const { farmerName, farmerAddress, farmerArea, farmerContact, farmerEmail, farmerPassword } = req.body;
 
-        if (!farmerName || !farmerAddress || !farmerArea || !farmerContact || !farmerEmail || !farmerPassword) {
+        if (!farmerName || !farmerAddress || !farmerArea || !farmerContact || !farmerEmail) {
             return res.status(401).json({ message: "All fields are required" });
         }
 
@@ -36,7 +36,6 @@ const registerFarmer = async (req, res) => {
             fs.unlinkSync(req.file.path);
         }
 
-        const hashedPassword = await bcrypt.hash(farmerPassword, 10);
 
         const farmer = new Farmer({
             farmerName,
@@ -45,7 +44,7 @@ const registerFarmer = async (req, res) => {
             farmerContact,
             farmerEmail,
             farmerProfileImage,
-            farmerPassword: hashedPassword
+            farmerPassword
         });
 
         await farmer.save();

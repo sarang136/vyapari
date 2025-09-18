@@ -41,7 +41,7 @@ const traderSchema = new mongoose.Schema({
     },
     traderPassword: {
         type: String,
-        required: true,
+        // required: true,
         trim: true,
     },
 

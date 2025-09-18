@@ -29,7 +29,7 @@ const farmerSchema = new mongoose.Schema({
     },
     farmerPassword: {
         type: String,
-        required: true,
+        // required: true,
         trim: true,
     },
     role: {
