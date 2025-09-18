@@ -14,7 +14,7 @@ const auth_token = process.env.AUTH_TOKEN
 
 const twilioClient = new twilio(account_sid, auth_token)
 
-
+// 
 const registerTrader = async (req, res) => {
   try {
     const { traderName, traderEmail, traderPassword, traderAddress, traderArea, traderContact } = req.body;
@@ -61,10 +61,6 @@ const sendOtp = async (req, res) => {
     const { contact } = req.body;
     console.log("contact", contact);
     const otp = String(Math.floor(100000 + Math.random() * 900000));
-    // // const traderExists = await Trader.find({traderContact});
-    // if(!traderExists){
-    //   return res.status(400).json({message : "Trader does not exists"});
-    // }
     await Otp.findOneAndUpdate(
       { contact },
       { otp },
