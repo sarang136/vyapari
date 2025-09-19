@@ -9,7 +9,7 @@ farmerRoutes.post('/register', upload.single("farmerProfileImage"), registerFarm
 farmerRoutes.post('/send-otp',  sendOtp);
 farmerRoutes.post('/login',  loginFarmer);
 farmerRoutes.get('/getTraders/:id', authMiddleware, getTraders);
-farmerRoutes.patch('/updateProfile', authMiddleware, updateProfile);
+farmerRoutes.patch('/updateProfile', authMiddleware, upload.single("farmerProfileImage"), updateProfile);
 farmerRoutes.patch('/changePassword', authMiddleware, changePassword);
 farmerRoutes.patch('/logout', logout);
 

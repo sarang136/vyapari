@@ -23,6 +23,10 @@ const registerTrader = async (req, res) => {
       return res.status(400).json({ message: "Name, email and password are required" });
     }
 
+    const existsInAnotherSchema = await Farmer.findOne({ farmerContact: traderContact });
+    if (existsInAnotherSchema) {
+      return res.status(400).json({ message: "User Already exists as farmer" });
+    }
     const existingTrader = await Trader.findOne({ traderEmail });
     const existingTraderByNumber = await Trader.findOne({ traderContact });
     if (existingTrader || existingTraderByNumber) {
@@ -50,7 +54,7 @@ const registerTrader = async (req, res) => {
     });
 
     await trader.save();
-    res.status(201).json({ message: "Trader registered successfully", data : trader });
+    res.status(201).json({ message: "Trader registered successfully", data: trader });
   } catch (error) {
     console.error("Error in registerTrader:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -82,7 +86,7 @@ const loginTrader = async (req, res) => {
   try {
     const { contact, otp } = req.body;
 
-    const trader = await Trader.findOne({ traderContact : contact}).select("+traderPassword");
+    const trader = await Trader.findOne({ traderContact: contact }).select("+traderPassword");
     if (!trader) {
       return res.status(400).json({ message: "Trader not found" });
     }
@@ -123,15 +127,25 @@ const updateTrader = async (req, res) => {
   try {
     const trader = req.trader;
     const { traderEmail, traderAddress, traderArea, traderContact } = req.body;
-    if (traderEmail === trader.traderEmail) {
-      return res.status(403).json({ message: "Old Email and New Email can't be same" })
+
+
+    let traderProfileImage = null;
+    if (req.file) {
+      const uploadResult = await uploadTheImage(req.file.path);
+      traderProfileImage = uploadResult?.secure_url;
+
+
+      fs.unlinkSync(req.file.path);
     }
+
     const updatedData = await Trader.findOneAndUpdate(trader._id, {
       traderEmail,
       traderAddress,
       traderArea,
-      traderContact
+      traderContact,
+      traderProfileImage
     }, { new: true })
+
     await updatedData.save();
     res.status(200).json({ message: "Data Updated Successfully", updatedData });
   } catch (error) {
@@ -160,55 +174,19 @@ const changeTraderPassword = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
-// const postGrade = async (req, res) => {
-//   try {
-//     const trader = req.trader;
-//     const { grade, price } = req.body;
+const getFarmers = async (req, res) => {
+  try {
+    const trader = req.trader;
+    if (!trader) {
+      return res.status(400).json({ message: "Trader invalid" })
+    }
+    const products = await Product.find({ traderId: trader._id })
+    res.status(200).json({ message: "success", products });
 
-//     if (!grade || !price) {
-//       return res.status(400).json({ message: "All fields are required" });
-//     }
-
-
-//     const gradeAlreadyExists = trader.grades.some(
-//       (g) => g.grade.toLowerCase() === grade.toLowerCase()
-//     );
-
-//     if (gradeAlreadyExists) {
-//       return res.status(400).json({ message: "Grade already exists" });
-//     }
-
-//     trader.grades.push({ grade: grade, price: price });
-
-//     await trader.save();
-
-//     res.status(200).json({ message: "Grade added successfully", grades: trader.grades });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-// const getGrates = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const trader = req.trader;
-//     console.log("id", id)
-//     console.log("trader._id", trader._id)
-//     if (id !== trader._id.toString()) {
-//       return res.status(403).json({ message: "trader id is required" })
-//     }
-//     const gradesFound = await Trader.findById(trader._id);
-//     console.log(gradesFound);
-//     if (!gradesFound) {
-//       return res.status(403).json({ message: "Trader not found" })
-//     }
-//     if (gradesFound.grades.length === 0) {
-//       return res.status(200).json({ message: " No grades found" })
-//     }
-//     res.status(200).json({ message: gradesFound?.grades })
-//   } catch (error) {
-//     res.status(500).json({ error: error.message })
-//   }
-// }
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
 const deleteGrade = async (req, res) => {
   try {
     const { gradeId } = req.params;
@@ -390,4 +368,4 @@ const addVehicle = async (req, res) => {
 }
 
 
-module.exports = { registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, sendOtp };
+module.exports = { registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, getFarmers, sendOtp };

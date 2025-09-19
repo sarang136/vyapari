@@ -11,6 +11,7 @@ const twilio = require('twilio');
 const account_sid = process.env.ACCOUNT_SID
 const auth_token = process.env.AUTH_TOKEN
 const twilioClient = new twilio(account_sid, auth_token)
+const Trader = require('../models/traderSchema')
 
 
 const registerFarmer = async (req, res) => {
@@ -19,6 +20,12 @@ const registerFarmer = async (req, res) => {
 
         if (!farmerName || !farmerAddress || !farmerArea || !farmerContact || !farmerEmail) {
             return res.status(401).json({ message: "All fields are required" });
+        }
+
+        const farmerExistInAnotherSchema = await Trader.findOne({traderContact : farmerContact});
+        if(farmerExistInAnotherSchema){
+            console.log("farmerExistInAnotherSchema", farmerExistInAnotherSchema)
+            return res.status(400).json({message : "User already registered as a trader!"});
         }
 
         const farmerExists = await Farmer.findOne({ farmerEmail });
@@ -114,29 +121,30 @@ const loginFarmer = async (req, res) => {
 }
 const updateProfile = async (req, res) => {
     try {
-        const { farmerAddress, farmerArea, farmerContact, farmerEmail } = req.body;
         const farmer = req.farmer;
+        if (!farmer) {
+            return res.status(400).json({ message: "Farmer not valid" })
+        }
+        const { farmerAddress, farmerArea, farmerContact, farmerEmail } = req.body;
         console.log("farmer from update", farmer)
-        if (farmerContact === farmer.farmerContact) {
-            return res.status(403).json({ message: "Old contact and new contact can't be same" })
-        }
-        if (farmerAddress === farmer.farmerAddress) {
-            return res.status(403).json({ message: "Old address and new address can't be same" })
-        }
-        if (farmerArea === farmer.farmerArea) {
-            return res.status(403).json({ message: "Old Area and new Area can't be same" })
-        }
-        if (farmerEmail === farmer.farmerEmail) {
-            return res.status(403).json({ message: "Old Email and new Email can't be same" })
+        let farmerProfileImage = null;
+        if (req.file) {
+            const uploadResult = await uploadTheImage(req.file.path);
+            farmerProfileImage = uploadResult?.secure_url;
+
+
+            fs.unlinkSync(req.file.path);
         }
         const updatedData = await Farmer.findByIdAndUpdate(farmer._id, {
             farmerContact,
             farmerAddress,
             farmerArea,
-            farmerEmail
+            farmerEmail,
+            farmerProfileImage
         }, { new: true })
+
         await updatedData.save()
-        res.status(200).json({ message: "Data Successfully Updated", data: updatedData })
+        res.status(200).json({ message: "Data Successfully Updated" })
     } catch (error) {
 
     }
