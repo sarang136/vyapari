@@ -64,18 +64,19 @@ const sendOtp = async (req, res) => {
   try {
     const { contact } = req.body;
     console.log("contact", contact);
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    // const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const otp = 1234
     await Otp.findOneAndUpdate(
       { contact },
       { otp },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     )
 
-    await twilioClient.messages.create({
-      body: `Otp - ${otp}`,
-      from: process.env.PHONE_NUMBER,
-      to: contact.startsWith('+') ? contact : `+91${contact}`,
-    })
+    // await twilioClient.messages.create({
+    //   body: `Otp - ${otp}`,
+    //   from: process.env.PHONE_NUMBER,
+    //   to: contact.startsWith('+') ? contact : `+91${contact}`,
+    // })
     res.status(200).json({ message: `Otp - ${otp}` })
   } catch (error) {
     console.log(error)

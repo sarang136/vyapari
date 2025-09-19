@@ -22,10 +22,10 @@ const registerFarmer = async (req, res) => {
             return res.status(401).json({ message: "All fields are required" });
         }
 
-        const farmerExistInAnotherSchema = await Trader.findOne({traderContact : farmerContact});
-        if(farmerExistInAnotherSchema){
+        const farmerExistInAnotherSchema = await Trader.findOne({ traderContact: farmerContact });
+        if (farmerExistInAnotherSchema) {
             console.log("farmerExistInAnotherSchema", farmerExistInAnotherSchema)
-            return res.status(400).json({message : "User already registered as a trader!"});
+            return res.status(400).json({ message: "User already registered as a trader!" });
         }
 
         const farmerExists = await Farmer.findOne({ farmerEmail });
@@ -64,7 +64,8 @@ const registerFarmer = async (req, res) => {
 const sendOtp = async (req, res) => {
     try {
         const { contact } = req.body;
-        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        // const otp = String(Math.floor(100000 + Math.random() * 900000));
+        const otp = 1234;
         // // const traderExists = await Trader.find({traderContact});
         // if(!traderExists){
         //   return res.status(400).json({message : "Trader does not exists"});
@@ -75,11 +76,11 @@ const sendOtp = async (req, res) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         )
 
-        await twilioClient.messages.create({
-            body: `Otp - ${otp}`,
-            from: process.env.PHONE_NUMBER,
-            to: contact.startsWith('+') ? contact : `+91${contact}`,
-        })
+        // await twilioClient.messages.create({
+        //     body: `Otp - ${otp}`,
+        //     from: process.env.PHONE_NUMBER,
+        //     to: contact.startsWith('+') ? contact : `+91${contact}`,
+        // })
         res.status(200).json({ message: `Otp - ${otp}` })
     } catch (error) {
         res.status(500).json({ error: error.message })
