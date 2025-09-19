@@ -65,7 +65,7 @@ const sendOtp = async (req, res) => {
     try {
         const { contact } = req.body;
         // const otp = String(Math.floor(100000 + Math.random() * 900000));
-        const otp = 1234;
+        const otp = 123456;
         // // const traderExists = await Trader.find({traderContact});
         // if(!traderExists){
         //   return res.status(400).json({message : "Trader does not exists"});

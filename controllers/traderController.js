@@ -65,7 +65,7 @@ const sendOtp = async (req, res) => {
     const { contact } = req.body;
     console.log("contact", contact);
     // const otp = String(Math.floor(100000 + Math.random() * 900000));
-    const otp = 1234
+    const otp = 123456
     await Otp.findOneAndUpdate(
       { contact },
       { otp },
