@@ -14,6 +14,7 @@ const auth_token = process.env.AUTH_TOKEN
 
 const twilioClient = new twilio(account_sid, auth_token)
 
+
 // 
 const registerTrader = async (req, res) => {
   try {
@@ -182,8 +183,10 @@ const getFarmers = async (req, res) => {
     if (!trader) {
       return res.status(400).json({ message: "Trader invalid" })
     }
-    const products = await Product.find({})
-    res.status(200).json({ message: "success", products });
+   const farmers = await Farmer.find({}).select("-farmerPassword");
+
+    // farmer.farmerPassword = undefined;
+    res.status(200).json({ message: "success", farmers : farmers });
 
   } catch (error) {
     res.status(500).json({ error: error.message })
