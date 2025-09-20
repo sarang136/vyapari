@@ -12,7 +12,7 @@ traderRouter.post('/send-otp', sendOtp)
 traderRouter.post('/login', loginTrader);
 traderRouter.patch('/updateTrader',authMiddleware, upload.single("traderProfileImage"), updateTrader);
 traderRouter.patch('/changeTraderPassword',authMiddleware, changeTraderPassword);
-traderRouter.get('/get-traders',authMiddleware, getFarmers);
+traderRouter.get('/get-farmers',authMiddleware, getFarmers);
 
 traderRouter.delete('/deleteGrade/:gradeId',authMiddleware, deleteGrade)
 traderRouter.patch('/updateGradebyId/:gradeId',authMiddleware, updateGradebyId)

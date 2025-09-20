@@ -4,6 +4,8 @@ const Product = require('../models/productSchema');
 const fs = require('fs')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
+
 const SAFE_DATA = ["traderName", "traderProfileImage", "traderAddress", "traderContact", "traderEmail"]
 const SELECTED = ["productName", "grade", "totalPrice", "quantity", "traderId", "priceWithoutGrade", "paymentStatus"]
 const Otp = require('../models/otpSchema');
