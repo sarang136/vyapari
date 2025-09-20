@@ -182,7 +182,7 @@ const getFarmers = async (req, res) => {
     if (!trader) {
       return res.status(400).json({ message: "Trader invalid" })
     }
-    const products = await Product.find({ traderId: trader._id })
+    const products = await Product.find({})
     res.status(200).json({ message: "success", products });
 
   } catch (error) {
