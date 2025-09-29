@@ -169,7 +169,6 @@ const deleteFarmer = async(req, res) => {
         res.status(500).json({error : error.message})
     }
 }
-
 const deleteTrader = async(req, res) => {
     try {
         const {traderId} = req.params;

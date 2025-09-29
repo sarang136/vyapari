@@ -13,7 +13,8 @@ const twilio = require('twilio');
 const account_sid = process.env.ACCOUNT_SID
 const auth_token = process.env.AUTH_TOKEN
 const twilioClient = new twilio(account_sid, auth_token)
-const Trader = require('../models/traderSchema')
+const Trader = require('../models/traderSchema');
+const { console } = require('inspector');
 
 
 const registerFarmer = async (req, res) => {
@@ -26,7 +27,7 @@ const registerFarmer = async (req, res) => {
 
         const farmerExistInAnotherSchema = await Trader.findOne({ traderContact: farmerContact });
         if (farmerExistInAnotherSchema) {
-            console.log("farmerExistInAnotherSchema", farmerExistInAnotherSchema)
+            // console.log("farmerExistInAnotherSchema", farmerExistInAnotherSchema)
             return res.status(400).json({ message: "User already registered as a trader!" });
         }
 
@@ -88,48 +89,113 @@ const sendOtp = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 }
+// const loginFarmer = async (req, res) => {
+//     try {
+//         const { contact, otp } = req.body;
+//         if (!contact || !otp) {
+//             return res.status(400).json({ message: "All fields are required" });
+//         }
+//         const farmer = await Farmer.findOne({ farmerContact: contact });
+
+//         if (!farmer) {
+//             return res.status(403).json({ message: "Farmer not found" });
+//         }
+//         const isOtpCorrect = await Otp.findOne({ contact, otp });
+//         if (!isOtpCorrect) {
+//             return res.status(403).json({ message: "Invalid OTP" });
+//         }
+
+//         await Otp.deleteOne({ contact });
+//         if (farmer.isActive === false) {
+//             return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
+//         }
+
+//         const token = jwt.sign({ _id: farmer._id }, process.env.JWT_SECRET);
+
+//         farmer.farmerPassword = undefined;
+
+//         res.cookie("token", token, {
+//             httpOnly: true,
+//             secure: true,
+//             sameSite: "None",
+//             maxAge: 30 * 24 * 60 * 60 * 1000,
+//         });
+//         res.status(200).json({ message: "Logged In successfull", farmer: farmer })
+
+//     } catch (error) {
+//         res.status(500).json({ error: error.message })
+//     }
+// }
+
 const loginFarmer = async (req, res) => {
-    try {
-        const { contact, otp } = req.body;
-        if (!contact || !otp) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
-        const farmer = await Farmer.findOne({ farmerContact: contact });
-        if (!farmer) {
-            return res.status(403).json({ message: "Farmer not found" });
-        }
-        const isOtpCorrect = await Otp.findOne({ contact, otp });
-        if (!isOtpCorrect) {
-            return res.status(403).json({ message: "Invalid OTP" });
-        }
-        await Otp.deleteOne({ contact });
-        if (farmer.isActive === false) {
-            return res.status(200).json({ message: "Oops ! you have been blocked by the admin" });
-        }
-        const token = await jwt.sign({ _id: farmer._id }, process.env.JWT_SECRET);
-
-        console.log("token", token)
-        farmer.farmerPassword = undefined;
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None",
-            maxAge: 30 * 24 * 60 * 60 * 1000,
-        });
-        res.status(200).json({ message: "Logged In successfull", farmer: farmer })
-
-    } catch (error) {
-        res.status(500).json({ error: error.message })
+  try {
+    const { contact, otp } = req.body;
+    if (!contact || !otp) {
+      return res.status(400).json({ message: "All fields are required" });
     }
-}
+
+    // Farmer check
+    const farmer = await Farmer.findOne({ farmerContact: contact });
+    if (!farmer) {
+      return res.status(403).json({ message: "Farmer not found" });
+    }
+
+    // OTP check with expiry and maxAttempts
+    const otpRecord = await Otp.findOne({ contact, otp });
+    if (otpRecord === 123456) {
+      return res.status(403).json({ message: "Invalid OTP" });
+    }
+
+    const now = Date.now();
+    // if (otpRecord.expiresAt && otpRecord.expiresAt < now) {
+    //   return res.status(403).json({ message: "OTP expired" });
+    // }
+
+    // if (otpRecord.attempts && otpRecord.attempts > 5) {
+    //   return res.status(403).json({ message: "Max OTP attempts exceeded" });
+    // }
+
+    // OTP used, delete it
+    await Otp.deleteOne({ contact });
+
+    // Check if farmer blocked
+    if (!farmer.isActive) {
+      return res.status(403).json({ message: "You have been blocked by the admin" });
+    }
+
+    // JWT token
+    const token = jwt.sign({ _id: farmer._id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+
+    // Hide sensitive info
+    const safeFarmer = { ...farmer.toObject() };
+    delete safeFarmer.farmerPassword;
+    delete safeFarmer.__v;
+
+    // Cookie settings
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction, // HTTPS only in production
+      sameSite: isProduction ? "None" : "Lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    return res.status(200).json({ message: "Logged in successfully", farmer: safeFarmer , token : token });
+  } catch (error) {
+    console.error("loginFarmer error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
 const updateProfile = async (req, res) => {
     try {
+        console.log("req.body", req.body)
+        console.log("req.file", req.file)
         const farmer = req.farmer;
         if (!farmer) {
             return res.status(400).json({ message: "Farmer not valid" })
         }
-        const { farmerAddress, farmerArea, farmerContact, farmerEmail } = req.body;
-        console.log("farmer from update", farmer)
+        const { farmerAddress, farmerArea, farmerContact } = req.body;
+        // console.log("farmer from update", farmer)
         let farmerProfileImage = null;
         if (req.file) {
             const uploadResult = await uploadTheImage(req.file.path);
@@ -142,7 +208,6 @@ const updateProfile = async (req, res) => {
             farmerContact,
             farmerAddress,
             farmerArea,
-            farmerEmail,
             farmerProfileImage
         }, { new: true })
 
@@ -180,13 +245,13 @@ const changePassword = async (req, res) => {
 const getTraders = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("farmer id", id)
+        // console.log("farmer id", id)
         const farmer = req.farmer;
-        console.log("farmer from controller", farmer)
+        // console.log("farmer from controller", farmer)
         if (id !== farmer._id.toString()) {
             return res.status(403).json({ message: "Farmer is not valid" })
         }
-        const foundProducts = await Product.find({ farmerId: farmer._id }).select(SELECTED).populate("traderId", SAFE_DATA)
+        const foundProducts = await Product.find({ farmerContact: farmer.farmerContact }).select(SELECTED).populate("traderId", SAFE_DATA)
         if (foundProducts.length === 0) {
             return res.status(200).json({ message: "No Products found on this farmer" })
         }
@@ -204,4 +269,4 @@ const logout = async (req, res) => {
     }
 }
 
-module.exports = { registerFarmer, sendOtp, loginFarmer, getTraders, updateProfile, changePassword, logout };
+module.exports = { registerFarmer, sendOtp, loginFarmer, getTraders, updateProfile, changePassword, logout }

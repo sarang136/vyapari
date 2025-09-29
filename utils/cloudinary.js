@@ -14,7 +14,7 @@ if (CLOUD_NAME && API_KEY && API_SECRET) {
         api_secret: API_SECRET,
     });
 } else {
-    console.warn("Cloudinary environment variables are missing.");
+    // console.warn("Cloudinary environment variables are missing.");
 }
 
 const uploadTheImage = async (localFilePath) => {
@@ -23,10 +23,10 @@ const uploadTheImage = async (localFilePath) => {
             folder: 'vyapari',
             resource_type: 'auto'
         });
-        console.log("Uploaded:", response?.secure_url);
+        // console.log("Uploaded:", response?.secure_url);
         return response;
     } catch (error) {
-        console.error("Upload error:", error);
+        // console.error("Upload error:", error);
         return null;
     }
 };
