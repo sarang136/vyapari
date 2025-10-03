@@ -10,11 +10,9 @@ const authMiddleware = async (req, res, next) => {
   console.log("req.cookies => ", req.cookies)
 
   try {
-    // const { token } = req.cookies ? req.cookies : res.Authorization ;
     const token =
-      req.cookies?.token || // जर cookie ने आला असेल
+      req.cookies?.token || 
       req.header("Authorization")?.replace("Bearer ", "");
-    // console.log("token", token);
 
     if (!token) {
       return res.status(401).json({ message: "No token, authorization denied" });

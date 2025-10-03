@@ -14,7 +14,6 @@ const auth_token = process.env.AUTH_TOKEN
 
 const twilioClient = new twilio(account_sid, auth_token)
 
-// 
 const registerTrader = async (req, res) => {
   try {
     const { traderName, traderEmail, traderPassword, traderAddress, traderArea, traderContact } = req.body;
@@ -254,136 +253,11 @@ const updateGradebyId = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 }
-
-
-
-
-// const addProduct = async (req, res) => {
-
-//   try {
-
-//     const trader = req.trader;
-//     // console.log("trader : " ,trader)
-//     const { id } = req.params;
-//     const products = Array.isArray(req.body) ? req.body : [req.body];
-//     console.log("Body => ", req.body)
-//     console.log("File => ", req.file)
-//     let Vehiclephoto = null;
-
-//     const v = req.body.deliveryWay 
-
-//     if ( v === "delivered" && req.file) {
-//       const uploadResult = await uploadTheImage(req.file.path);
-//       Vehiclephoto = uploadResult?.secure_url;
-//       fs.unlinkSync(req.file.path);
-//     }
-
-
-//     if (!id) {
-//       return res.status(403).json({ message: "Trader id is required" });
-//     }
-//     if (!trader) {
-//       return res.status(402).json({ message: "Trader not found" });
-//     }
-//     if (id !== trader._id.toString()) {
-//       return res.status(403).json({ message: "Trader id is not valid" });
-//     }
-
-
-
-//     let savedProducts = [];
-
-//     for (const productData of products) {
-//       const {
-//         productName,
-//         farmerName,
-//         traderName,
-//         grade,
-//         gradePrice,
-//         priceWithoutGrade,
-//         totalPrice,
-//         quantity,
-//         weight,
-//         BillType,
-//         vehicleName,
-//         vehicleNumber,
-//         farmerContact,
-//         paymentStatus,
-//         deliveryWay
-//       } = productData;
-
-
-//       if (
-//         !productName ||
-//         !farmerName ||
-//         !farmerContact ||
-//         !traderName ||
-//         (!grade && !priceWithoutGrade) ||
-//         (grade && !gradePrice) ||
-//         !totalPrice ||
-//         !quantity ||
-//         !BillType ||
-//         (v === "delivered" && !vehicleName) ||
-//         (v === "delivered" && !vehicleNumber) ||
-//         !deliveryWay ||
-//         !paymentStatus
-//       ) {
-//         return res.status(400).json({
-//           message: "All required fields must be filled properly",
-//           invalidProduct: productData,
-//         });
-//       }
-
-//       // if (traderName !== trader.traderName) {
-//       //   return res.status(403).json({ message: "Trader Name is not valid" });
-//       // }
-
-//       // const farmerFound = await Farmer.findOne({ farmerContact, farmerName }); //or de nantar garajpadlitar farmerContact || farmerName
-//       // if (!farmerFound) {
-//       //   return res.status(403).json({ message: "Farmer not found or invalid details" });
-//       // }
-
-//       const product = new Product({
-//         productName,
-//         farmerName,
-//         farmerContact,
-//         traderName,
-//         grade,
-//         gradePrice,
-//         priceWithoutGrade,
-//         totalPrice,
-//         quantity,
-//         weight,
-//         BillType,
-//         vehicleName,
-//         vehicleNumber,
-//         vehiclePhoto: Vehiclephoto,
-//         deliveryWay,
-//         paymentStatus,
-//         traderId: trader._id,
-//       });
-
-//       const addedProduct = await product.save();
-//       savedProducts.push(addedProduct);
-//     }
-
-//     res.status(200).json({
-//       message: `${savedProducts.length} product(s) added successfully`,
-//       data: savedProducts,
-//     });
-
-//   } catch (error) {
-//     // console.log(error)
-//     res.status(500).json({ error: error.message });
-//   }
-// };
-
-  const addProduct = async (req, res) => {
+const addProduct = async (req, res) => {
     try {
       const trader = req.trader;
       const { id } = req.params;
       const products = Array.isArray(req.body) ? req.body : [req.body];
-      let Vehiclephoto = null;
 
       console.log(trader);
       console.log(id);
@@ -393,8 +267,6 @@ const updateGradebyId = async (req, res) => {
       console.log("File Way : ", req.file)
 
       // req.file = req.body.vehiclePhoto
-
-
       if (!id) {
         return res.status(403).json({ message: "Trader id is required" });
       }
@@ -419,7 +291,7 @@ const updateGradebyId = async (req, res) => {
           quantity,
           weight,
           BillType,
-          vehicleName,
+          // vehicleName,
           vehicleNumber,
           farmerContact,
           paymentStatus,
@@ -447,7 +319,7 @@ const updateGradebyId = async (req, res) => {
           !BillType ||
           !deliveryWay ||
           !paymentStatus ||
-          (deliveryWay === "delivered" && !vehicleName) ||
+          // (deliveryWay === "delivered" && !vehicleName) ||
           (deliveryWay === "delivered" && !vehicleNumber)
         ) {
           return res.status(400).json({
@@ -455,6 +327,7 @@ const updateGradebyId = async (req, res) => {
             invalidProduct: productData,
           });
         }
+        // const vehicleExists = await Veh
 
         const product = new Product({
           productName,
@@ -468,9 +341,9 @@ const updateGradebyId = async (req, res) => {
           quantity,
           weight,
           BillType,
-          vehicleName: deliveryWay === "delivered" ? vehicleName : null,
+          // vehicleName: deliveryWay === "delivered" ? vehicleName : null,
           vehicleNumber: deliveryWay === "delivered" ? vehicleNumber : null,
-          vehiclePhoto: Vehiclephoto,
+          // vehiclePhoto: Vehiclephoto,
           deliveryWay,
           paymentStatus,
           traderId: trader._id,
@@ -487,9 +360,7 @@ const updateGradebyId = async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  };
-
-
+};
 const logout = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -501,22 +372,43 @@ const logout = async (req, res) => {
 const addVehicle = async (req, res) => {
   try {
     const trader = req.trader;
-    const { vehicleName, vehicleNumber } = req.body;
-    if (!vehicleName || !vehicleNumber) {
-      return res.status(403).json({ message: "Required all the fields" })
+    let vehicles = req.body;
+
+    // Normalize vehicles into an array
+    if (!Array.isArray(vehicles)) {
+      vehicles = [vehicles]; // wrap single object into array
     }
 
+    if (vehicles.length === 0) {
+      return res.status(400).json({ message: "At least one vehicle is required" });
+    }
 
-    trader.vehicle.vehicleName = vehicleName
-    trader.vehicle.vehicleNumber = vehicleNumber
+    // Validate and push each vehicle
+    for (const v of vehicles) {
+      if (!v.vehicleName || !v.vehicleNumber) {
+        return res.status(400).json({ message: "Each vehicle must have name and number" });
+      }
+      trader.vehicle.push({
+        vehicleName: v.vehicleName,
+        vehicleNumber: v.vehicleNumber
+      });
+    }
 
-    await trader.save()
-    res.status(200).json({ message: "Vehicle added successfully", trader })
+    await trader.save();
+
+    // Exclude password
+    const traderWithoutPassword = trader.toObject();
+    delete traderWithoutPassword.password;
+
+    res.status(200).json({
+      message: "Vehicle(s) added successfully",
+      trader: traderWithoutPassword
+    });
 
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 const GetProducts = async (req, res) => {
   try {
     const trader = req.trader;

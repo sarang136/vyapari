@@ -47,14 +47,14 @@ const traderSchema = new mongoose.Schema({
 
     // grades: [gradeSchema],
 
-    vehicle: {
+    vehicle: [{
         vehicleName: {
             type: String,
         },
         vehicleNumber: {
             type: String,
         }
-    },
+    }],
     role: {
         type: String,
         default: "Trader",
