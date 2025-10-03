@@ -409,6 +409,20 @@ const addVehicle = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const getAllVehicles = async (req, res) => {
+  try {
+    const trader = req.trader;
+
+    if (!trader) {
+      return res.status(400).json({ message: "Trader invalid" })
+    }
+
+    res.status(200).json({ message: "Vehicles fetched successfully", data: trader.vehicle });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 const GetProducts = async (req, res) => {
   try {
     const trader = req.trader;
@@ -503,4 +517,4 @@ const updatepaymentStatus = async (req, res) => {
   }
 }
 
-module.exports = { updatepaymentStatus, deleteProduct, GetProductsById, GetProducts, registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, getFarmers, sendOtp };
+module.exports = { updatepaymentStatus, deleteProduct, GetProductsById, GetProducts, registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, getFarmers, sendOtp, getAllVehicles };
