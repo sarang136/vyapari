@@ -303,7 +303,7 @@ const addProduct = async (req, res) => {
       }
     }
 
-
+// 
     const overAlltotalPrice = products.reduce(
       (sum, item) => sum + (Number(item.totalPrice) || 0),
       0
