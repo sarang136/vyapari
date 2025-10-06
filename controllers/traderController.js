@@ -254,96 +254,93 @@ const updateGradebyId = async (req, res) => {
   }
 }
 const addProduct = async (req, res) => {
-    try {
-      const trader = req.trader;
-      const { id } = req.params;
-      const products = Array.isArray(req.body) ? req.body : [req.body];
+  try {
+    const trader = req.trader;
+    const { id } = req.params;
+    const products = Array.isArray(req.body) ? req.body : [req.body];
 
-      console.log(trader);
-      console.log(id);
+    if (!id) return res.status(403).json({ message: "Trader id is required" });
+    if (!trader) return res.status(402).json({ message: "Trader not found" });
 
+    let savedProducts = [];
 
-      console.log("Body Way : ", req.body)
-      console.log("File Way : ", req.file)
+    for (const productData of products) {
+      const {
+        productName,
+        farmerName,
+        traderName,
+        BillType,
+        vehicleNumber,
+        farmerContact,
+        paymentStatus,
+        deliveryWay,
 
-      // req.file = req.body.vehiclePhoto
-      if (!id) {
-        return res.status(403).json({ message: "Trader id is required" });
+        // arrays:
+        grade = [],
+        gradePrice = [],
+        priceWithoutGrade = [],
+        quantity = [],
+        weight = []
+      } = productData;
+
+      // Validate base farmer/trader info
+      if (
+        !productName ||
+        !farmerName ||
+        !farmerContact ||
+        !traderName ||
+        !BillType ||
+        !deliveryWay ||
+        !paymentStatus ||
+        (deliveryWay === "delivered" && !vehicleNumber)
+      ) {
+        return res.status(400).json({
+          message: "All required fields must be filled properly",
+          invalidProduct: productData,
+        });
       }
-      if (!trader) {
-        return res.status(402).json({ message: "Trader not found" });
+
+      // Ensure arrays are consistent
+      const itemCount = Math.max(
+        grade.length,
+        gradePrice.length,
+        priceWithoutGrade.length,
+        quantity.length,
+        weight.length
+      );
+
+      if (itemCount === 0) {
+        return res.status(400).json({
+          message: "At least one product entry is required for this farmer.",
+        });
       }
-      // if (id.toString() !== trader._id.toString()) {
-      //   return res.status(403).json({ message: "Trader id is not valid" });
-      // }
 
-      let savedProducts = [];
+      for (let i = 0; i < itemCount; i++) {
+        const currentGrade = grade[i] || null;
+        const currentGradePrice = gradePrice[i] || null;
+        const currentPriceWithoutGrade = priceWithoutGrade[i] || null;
+        const currentQuantity = quantity[i] || null;
+        const currentWeight = weight[i] || null;
 
-      for (const productData of products) {
-        const {
-          productName,
-          farmerName,
-          traderName,
-          grade,
-          gradePrice,
-          priceWithoutGrade,
-          totalPrice,
-          quantity,
-          weight,
-          BillType,
-          // vehicleName,
-          vehicleNumber,
-          farmerContact,
-          paymentStatus,
-          deliveryWay,
-        } = productData;
-
-
-        if (deliveryWay === "delivered" && req.file) {
-          const uploadResult = await uploadTheImage(req.file.path);
-          Vehiclephoto = uploadResult?.secure_url;
-          fs.unlinkSync(req.file.path);
-        }
-
-       
-        if (
-          !productName ||
-          !farmerName ||
-          !farmerContact ||
-          !traderName ||
-          // (!grade && !priceWithoutGrade) ||
-          // (!grade && !gradePrice) ||
-          (BillType === "Shimla" ? !priceWithoutGrade : !grade || !gradePrice) ||
-          !totalPrice ||
-          !quantity ||
-          !BillType ||
-          !deliveryWay ||
-          !paymentStatus ||
-          // (deliveryWay === "delivered" && !vehicleName) ||
-          (deliveryWay === "delivered" && !vehicleNumber)
-        ) {
-          return res.status(400).json({
-            message: "All required fields must be filled properly",
-            invalidProduct: productData,
-          });
-        }
-        // const vehicleExists = await Veh
+        // Compute total price for each product if applicable
+        const totalPrice =
+          BillType === "Shimla"
+            ? currentPriceWithoutGrade * currentQuantity
+            : currentGradePrice * currentQuantity;
 
         const product = new Product({
           productName,
           farmerName,
           farmerContact,
           traderName,
-          grade,
-          gradePrice,
-          priceWithoutGrade,
+          grade: currentGrade,
+          gradePrice: currentGradePrice,
+          priceWithoutGrade: currentPriceWithoutGrade,
           totalPrice,
-          quantity,
-          weight,
+          quantity: currentQuantity,
+          weight: currentWeight,
           BillType,
-          // vehicleName: deliveryWay === "delivered" ? vehicleName : null,
           vehicleNumber: deliveryWay === "delivered" ? vehicleNumber : null,
-          // vehiclePhoto: Vehiclephoto,
           deliveryWay,
           paymentStatus,
           traderId: trader._id,
@@ -352,15 +349,17 @@ const addProduct = async (req, res) => {
         const addedProduct = await product.save();
         savedProducts.push(addedProduct);
       }
-
-      res.status(200).json({
-        message: `${savedProducts.length} product(s) added successfully`,
-        data: savedProducts,
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
+
+    res.status(200).json({
+      message: `${savedProducts.length} product(s) added successfully`,
+      data: savedProducts,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
+
 const logout = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -396,7 +395,7 @@ const addVehicle = async (req, res) => {
 
     await trader.save();
 
-    // Exclude password
+
     const traderWithoutPassword = trader.toObject();
     delete traderWithoutPassword.password;
 
