@@ -257,108 +257,83 @@ const addProduct = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const products = Array.isArray(req.body) ? req.body : [req.body];
+    const body = Array.isArray(req.body) ? req.body[0] : req.body;
 
     if (!id) return res.status(403).json({ message: "Trader id is required" });
     if (!trader) return res.status(402).json({ message: "Trader not found" });
 
-    let savedProducts = [];
+    const {
+      farmerName,
+      traderName,
+      BillType,
+      vehicleNumber,
+      farmerContact,
+      paymentStatus,
+      deliveryWay,
+      vehicleName,
+      products,
+    } = body;
 
-    for (const productData of products) {
-      const {
-        productName,
-        farmerName,
-        traderName,
-        BillType,
-        vehicleNumber,
-        farmerContact,
-        paymentStatus,
-        deliveryWay,
+    if (
+      !farmerName ||
+      !farmerContact ||
+      !traderName ||
+      !BillType ||
+      !deliveryWay ||
+      !paymentStatus ||
+      !Array.isArray(products) ||
+      products.length === 0
+    ) {
+      return res.status(400).json({
+        message: "All required fields must be filled properly",
+      });
+    }
 
-        // arrays:
-        grade = [],
-        gradePrice = [],
-        priceWithoutGrade = [],
-        quantity = [],
-        weight = []
-      } = productData;
 
-      // Validate base farmer/trader info
+    for (const p of products) {
       if (
-        !productName ||
-        !farmerName ||
-        !farmerContact ||
-        !traderName ||
-        !BillType ||
-        !deliveryWay ||
-        !paymentStatus ||
-        (deliveryWay === "delivered" && !vehicleNumber)
+        !p.productName ||
+        !p.totalPrice ||
+        !p.quantity
       ) {
         return res.status(400).json({
-          message: "All required fields must be filled properly",
-          invalidProduct: productData,
+          message: "Each product must have productName, totalPrice, and quantity",
+          invalidProduct: p,
         });
-      }
-
-      // Ensure arrays are consistent
-      const itemCount = Math.max(
-        grade.length,
-        gradePrice.length,
-        priceWithoutGrade.length,
-        quantity.length,
-        weight.length
-      );
-
-      if (itemCount === 0) {
-        return res.status(400).json({
-          message: "At least one product entry is required for this farmer.",
-        });
-      }
-
-      for (let i = 0; i < itemCount; i++) {
-        const currentGrade = grade[i] || null;
-        const currentGradePrice = gradePrice[i] || null;
-        const currentPriceWithoutGrade = priceWithoutGrade[i] || null;
-        const currentQuantity = quantity[i] || null;
-        const currentWeight = weight[i] || null;
-
-        // Compute total price for each product if applicable
-        const totalPrice =
-          BillType === "Shimla"
-            ? currentPriceWithoutGrade * currentQuantity
-            : currentGradePrice * currentQuantity;
-
-        const product = new Product({
-          productName,
-          farmerName,
-          farmerContact,
-          traderName,
-          grade: currentGrade,
-          gradePrice: currentGradePrice,
-          priceWithoutGrade: currentPriceWithoutGrade,
-          totalPrice,
-          quantity: currentQuantity,
-          weight: currentWeight,
-          BillType,
-          vehicleNumber: deliveryWay === "delivered" ? vehicleNumber : null,
-          deliveryWay,
-          paymentStatus,
-          traderId: trader._id,
-        });
-
-        const addedProduct = await product.save();
-        savedProducts.push(addedProduct);
       }
     }
 
+
+    const overAlltotalPrice = products.reduce(
+      (sum, item) => sum + (Number(item.totalPrice) || 0),
+      0
+    );
+
+    const productDoc = new Product({
+      farmerName,
+      farmerContact,
+      traderName,
+      BillType,
+      vehicleNumber,
+      vehicleName,
+      deliveryWay,
+      paymentStatus,
+      products,
+      overAlltotalPrice,
+      traderId: trader._id,
+    });
+
+    const savedProduct = await productDoc.save();
+
     res.status(200).json({
-      message: `${savedProducts.length} product(s) added successfully`,
-      data: savedProducts,
+      message: "Products added successfully",
+      data: savedProduct,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 const logout = async (req, res) => {
   try {
