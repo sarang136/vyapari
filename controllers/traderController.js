@@ -262,65 +262,47 @@ const addProduct = async (req, res) => {
     if (!id) return res.status(403).json({ message: "Trader id is required" });
     if (!trader) return res.status(402).json({ message: "Trader not found" });
 
-    const {
-      farmerName,
-      traderName,
-      BillType,
-      vehicleNumber,
-      farmerContact,
-      paymentStatus,
-      deliveryWay,
-      vehicleName,
-      products,
-    } = body;
+    const { farmerName, farmerContact, traderName, BillType, products } = body;
 
-    if (
-      !farmerName ||
-      !farmerContact ||
-      !traderName ||
-      !BillType ||
-      !deliveryWay ||
-      !paymentStatus ||
-      !Array.isArray(products) ||
-      products.length === 0
-    ) {
+    // Validate mandatory fields
+    if (!farmerName || !farmerContact || !traderName || !BillType) {
       return res.status(400).json({
-        message: "All required fields must be filled properly",
+        message: "farmerName, farmerContact, traderName, and BillType are required",
       });
     }
 
+    // Validate products array
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({
+        message: "Products must be a non-empty array",
+      });
+    }
 
+    // Validate each product and ensure required fields exist
     for (const p of products) {
-      if (
-        !p.productName ||
-        !p.totalPrice ||
-        !p.quantity
-      ) {
+      if (!p.productName || !p.totalPrice || !p.quantity || !p.deliveryWay || !p.paymentStatus) {
         return res.status(400).json({
-          message: "Each product must have productName, totalPrice, and quantity",
+          message: "Each product must have productName, totalPrice, quantity, deliveryWay, and paymentStatus",
           invalidProduct: p,
         });
       }
     }
 
-// 
+    // Calculate overall total price
     const overAlltotalPrice = products.reduce(
       (sum, item) => sum + (Number(item.totalPrice) || 0),
       0
     );
 
+    // Create product document
     const productDoc = new Product({
       farmerName,
       farmerContact,
       traderName,
       BillType,
-      vehicleNumber,
-      vehicleName,
-      deliveryWay,
-      paymentStatus,
-      products,
+      products, // products already include deliveryWay, vehicleNumber, paymentStatus
       overAlltotalPrice,
-      traderId: trader._id,
+      // traderId: trader._id, // optional
     });
 
     const savedProduct = await productDoc.save();
@@ -333,6 +315,8 @@ const addProduct = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+module.exports = { addProduct };
 
 
 const logout = async (req, res) => {
