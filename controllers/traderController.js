@@ -314,10 +314,6 @@ const addProduct = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-module.exports = { addProduct };
-
-
 const logout = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -384,6 +380,7 @@ const GetProducts = async (req, res) => {
   try {
     const trader = req.trader;
 
+
     if (!trader) {
       return res.status(400).json({ message: "Trader invalid" })
     }
@@ -400,13 +397,16 @@ const GetProductsById = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit
     if (!trader) {
       return res.status(400).json({ message: "Trader invalid" })
     }
     if (!id) {
       return res.status(400).json({ message: "Product id is required" })
     }
-    const products = await Product.find({ traderId: id });
+    const products = await Product.find({ traderId: id }).skip(skip).limit(limit);
     res.status(200).json({ message: "Products fetched successfully", data: products });
 
   } catch (error) {
