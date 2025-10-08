@@ -397,16 +397,17 @@ const GetProductsById = async (req, res) => {
   try {
     const trader = req.trader;
     const { id } = req.params;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 10;
+    // const skip = (page - 1) * limit
     if (!trader) {
       return res.status(400).json({ message: "Trader invalid" })
     }
     if (!id) {
       return res.status(400).json({ message: "Product id is required" })
     }
-    const products = await Product.find({ traderId: id }).skip(skip).limit(limit);
+    const products = await Product.find({ traderId: id })
+    // .skip(skip).limit(limit);
     res.status(200).json({ message: "Products fetched successfully", data: products });
 
   } catch (error) {
