@@ -29,13 +29,12 @@ const productSchema = new mongoose.Schema(
     farmerContact: { type: String, required: true },
     farmerName: { type: String, required: true },
     traderName: { type: String, required: true },
-
+    
     BillType: { type: String, enum: ["G4", "Shimla"], required: true },
-    traderId: { type: mongoose.Schema.Types.ObjectId, ref: "Trader" },
+    traderId: { type: mongoose.Schema.Types.ObjectId, ref: "Trader", required : true},
 
 
     products: [productItemSchema],
-
     overAlltotalPrice: { type: Number, default: 0 },
   },
   { timestamps: true }

@@ -6,7 +6,7 @@ const Farmer = require('../models/farmerSchema')
 const Product = require('../models/productSchema')
 const fs = require("fs");
 const Otp = require('../models/otpSchema');
-const twilio = require('twilio'); 
+const twilio = require('twilio');
 const uploadTheImage = require("../utils/cloudinary");
 
 const account_sid = process.env.ACCOUNT_SID
@@ -120,7 +120,7 @@ const loginTrader = async (req, res) => {
       .json({
         message: "Trader logged in successfully",
         trader,
-        token : token
+        token: token
       });
 
   } catch (error) {
@@ -196,7 +196,7 @@ const deleteGrade = async (req, res) => {
     const trader = req.trader;
     // console.log("trader", trader)
     // console.log("id", gradeId)
-    
+
     if (!gradeId) {
       return res.status(400).json({ message: "Grade id is required" });
     }
@@ -264,21 +264,20 @@ const addProduct = async (req, res) => {
 
     const { farmerName, farmerContact, traderName, BillType, products } = body;
 
-    // Validate mandatory fields
+
     if (!farmerName || !farmerContact || !traderName || !BillType) {
       return res.status(400).json({
         message: "farmerName, farmerContact, traderName, and BillType are required",
       });
     }
 
-    // Validate products array
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({
         message: "Products must be a non-empty array",
       });
     }
 
-    // Validate each product and ensure required fields exist
+
     for (const p of products) {
       if (!p.productName || !p.totalPrice || !p.quantity || !p.deliveryWay || !p.paymentStatus) {
         return res.status(400).json({
@@ -288,21 +287,21 @@ const addProduct = async (req, res) => {
       }
     }
 
-    // Calculate overall total price
+
     const overAlltotalPrice = products.reduce(
       (sum, item) => sum + (Number(item.totalPrice) || 0),
       0
     );
 
-    // Create product document
+
     const productDoc = new Product({
       farmerName,
       farmerContact,
       traderName,
+      traderId: trader._id,
       BillType,
-      products, // products already include deliveryWay, vehicleNumber, paymentStatus
+      products,
       overAlltotalPrice,
-      // traderId: trader._id, // optional
     });
 
     const savedProduct = await productDoc.save();
@@ -464,7 +463,7 @@ const updatepaymentStatus = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    
+
     if (!product) {
       return res.status(404).json({ message: "Product not found" })
     }
