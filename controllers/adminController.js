@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const Trader = require('../models/traderSchema');
 const Product = require('../models/productSchema');
 const Farmer = require('../models/farmerSchema');
+const Subscription = require('../models/subscriptionsModel');
 
 // const Select_for_Traders = [""]
 
@@ -157,28 +158,77 @@ const blockFarmer = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-const deleteFarmer = async(req, res) => {
+const deleteFarmer = async (req, res) => {
     try {
-        const {farmerId} = req.params;
+        const { farmerId } = req.params;
         const deleted = await Farmer.findByIdAndDelete(farmerId);
-        if(!deleted){
+        if (!deleted) {
             return res.status(404).json({ message: "Farmer not found" });
         }
-        res.status(200).json({message: "Farmer Deleted Successfully"});
+        res.status(200).json({ message: "Farmer Deleted Successfully" });
     } catch (error) {
-        res.status(500).json({error : error.message})
+        res.status(500).json({ error: error.message })
     }
 }
-const deleteTrader = async(req, res) => {
+const deleteTrader = async (req, res) => {
     try {
-        const {traderId} = req.params;
+        const { traderId } = req.params;
         const deleted = await Trader.findByIdAndDelete(traderId);
-        if(!deleted){
+        if (!deleted) {
             return res.status(404).json({ message: "Trader not found" });
         }
-        res.status(200).json({message: "Trader Deleted Successfully"});
+        res.status(200).json({ message: "Trader Deleted Successfully" });
     } catch (error) {
-        res.status(500).json({error : error.message})
+        res.status(500).json({ error: error.message })
+    }
+}
+const addSubscriptions = async (req, res) => {
+    try {
+        const admin = req.admin;
+        const { duration, amount, forWhom} = req.body;
+        if (!admin) {
+            return res.status(400).json({ message: "Admin is not valid" });
+        }
+        if(!duration || !amount || !forWhom){
+            return res.status(200).json({message : "All fields are required"});
+        }
+        const subscription = new Subscription({
+            duration,
+            amount,
+            forWhom
+        })
+        await subscription.save();
+        res.status(200).json({ message: "Success", subscription });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+const getAllSubscriptions = async (req, res) => {
+    try {
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(400).json({ message: "Admin is not valid" });
+        }
+        const subs = await Subscription.find({});
+        res.status(200).json({ message: "Success", subscriptions: subs })
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+const deleteSubscriptions = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ message: "id is required" });
+        }
+        const subExists = await Subscription.findById(id);
+        if (!subExists) {
+            return res.status(400).json({ message: "Subscription does not exists" });
+        }
+        await Subscription.findByIdAndDelete(id);
+        res.status(200).json({ message: "Success delete" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 }
 const getAllProducts = async (req, res) => {
@@ -202,4 +252,4 @@ const logout = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 };
-module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, deleteFarmer, deleteTrader, logout }
+module.exports = { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, getAllProducts, deleteFarmer, deleteTrader, logout, addSubscriptions, getAllSubscriptions, deleteSubscriptions }

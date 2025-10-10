@@ -8,7 +8,6 @@ const traderRouter = require('./routes/traderRoutes');
 const farmerRoutes = require('./routes/farmerRoutes');
 const cors = require('cors');
 const adminRouter = require('./routes/adminRoutes');
-
 app.use(cors({
   origin: (origin, callback) => callback(null, true),
   credentials: true,

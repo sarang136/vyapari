@@ -4,6 +4,9 @@ const Product = require('../models/productSchema');
 const fs = require('fs')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const Subscription = require('../models/subscriptionsModel');
+const SubscribedPeople = require('../models/subscribedPeople');
+const cron = require("node-cron");
 
 
 const SAFE_DATA = ["traderName", "traderProfileImage", "traderAddress", "traderContact", "traderEmail"]
@@ -19,7 +22,7 @@ const { console } = require('inspector');
 
 const registerFarmer = async (req, res) => {
     try {
-        const { farmerName, farmerAddress, farmerArea, farmerContact, farmerEmail, farmerPassword } = req.body;
+        const { farmerName, farmerAddress, farmerArea, farmerContact, farmerEmail, farmerPassword, duration } = req.body;
 
         if (!farmerName || !farmerAddress || !farmerArea || !farmerContact || !farmerEmail) {
             return res.status(401).json({ message: "All fields are required" });
@@ -46,6 +49,10 @@ const registerFarmer = async (req, res) => {
             fs.unlinkSync(req.file.path);
         }
 
+        const createdAt = new Date();
+        const expiryDate = new Date(createdAt);
+        expiryDate.setMonth(expiryDate.getMonth() + (duration || 1));
+
 
         const farmer = new Farmer({
             farmerName,
@@ -54,7 +61,9 @@ const registerFarmer = async (req, res) => {
             farmerContact,
             farmerEmail,
             farmerProfileImage,
-            farmerPassword
+            farmerPassword,
+            duration: duration || 1,
+            expiryDate,
         });
 
         await farmer.save();
@@ -126,65 +135,64 @@ const sendOtp = async (req, res) => {
 //         res.status(500).json({ error: error.message })
 //     }
 // }
-
 const loginFarmer = async (req, res) => {
-  try {
-    const { contact, otp } = req.body;
-    if (!contact || !otp) {
-      return res.status(400).json({ message: "All fields are required" });
+    try {
+        const { contact, otp } = req.body;
+        if (!contact || !otp) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // Farmer check
+        const farmer = await Farmer.findOne({ farmerContact: contact });
+        if (!farmer) {
+            return res.status(403).json({ message: "Farmer not found" });
+        }
+
+        // OTP check with expiry and maxAttempts
+        const otpRecord = await Otp.findOne({ contact, otp });
+        if (otpRecord === 123456) {
+            return res.status(403).json({ message: "Invalid OTP" });
+        }
+
+        const now = Date.now();
+        // if (otpRecord.expiresAt && otpRecord.expiresAt < now) {
+        //   return res.status(403).json({ message: "OTP expired" });
+        // }
+
+        // if (otpRecord.attempts && otpRecord.attempts > 5) {
+        //   return res.status(403).json({ message: "Max OTP attempts exceeded" });
+        // }
+
+        // OTP used, delete it
+        await Otp.deleteOne({ contact });
+
+        // Check if farmer blocked
+        if (!farmer.isActive) {
+            return res.status(403).json({ message: "You have been blocked by the admin" });
+        }
+
+        // JWT token
+        const token = jwt.sign({ _id: farmer._id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+
+        // Hide sensitive info
+        const safeFarmer = { ...farmer.toObject() };
+        delete safeFarmer.farmerPassword;
+        delete safeFarmer.__v;
+
+        // Cookie settings
+        const isProduction = process.env.NODE_ENV === "production";
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: isProduction, // HTTPS only in production
+            sameSite: isProduction ? "None" : "Lax",
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        });
+
+        return res.status(200).json({ message: "Logged in successfully", farmer: safeFarmer, token: token });
+    } catch (error) {
+        console.error("loginFarmer error:", error);
+        return res.status(500).json({ error: error.message });
     }
-
-    // Farmer check
-    const farmer = await Farmer.findOne({ farmerContact: contact });
-    if (!farmer) {
-      return res.status(403).json({ message: "Farmer not found" });
-    }
-
-    // OTP check with expiry and maxAttempts
-    const otpRecord = await Otp.findOne({ contact, otp });
-    if (otpRecord === 123456) {
-      return res.status(403).json({ message: "Invalid OTP" });
-    }
-
-    const now = Date.now();
-    // if (otpRecord.expiresAt && otpRecord.expiresAt < now) {
-    //   return res.status(403).json({ message: "OTP expired" });
-    // }
-
-    // if (otpRecord.attempts && otpRecord.attempts > 5) {
-    //   return res.status(403).json({ message: "Max OTP attempts exceeded" });
-    // }
-
-    // OTP used, delete it
-    await Otp.deleteOne({ contact });
-
-    // Check if farmer blocked
-    if (!farmer.isActive) {
-      return res.status(403).json({ message: "You have been blocked by the admin" });
-    }
-
-    // JWT token
-    const token = jwt.sign({ _id: farmer._id }, process.env.JWT_SECRET, { expiresIn: "30d" });
-
-    // Hide sensitive info
-    const safeFarmer = { ...farmer.toObject() };
-    delete safeFarmer.farmerPassword;
-    delete safeFarmer.__v;
-
-    // Cookie settings
-    const isProduction = process.env.NODE_ENV === "production";
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProduction, // HTTPS only in production
-      sameSite: isProduction ? "None" : "Lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
-
-    return res.status(200).json({ message: "Logged in successfully", farmer: safeFarmer , token : token });
-  } catch (error) {
-    console.error("loginFarmer error:", error);
-    return res.status(500).json({ error: error.message });
-  }
 };
 const updateProfile = async (req, res) => {
     try {
@@ -251,7 +259,7 @@ const getTraders = async (req, res) => {
         if (id !== farmer._id.toString()) {
             return res.status(403).json({ message: "Farmer is not valid" })
         }
-        const foundProducts = await Product.find({ farmerContact: farmer.farmerContact }).select(SELECTED).populate("traderId", SAFE_DATA)
+        const foundProducts = await Product.find({ farmerContact: farmer.farmerContact })
         if (foundProducts.length === 0) {
             return res.status(200).json({ message: "No Products found on this farmer" })
         }
@@ -268,5 +276,76 @@ const logout = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 }
+const buySubscription = async (req, res) => {
+    try {
+        const farmer = req.farmer;
+        const { id } = req.params;
+        const { amountPaid } = req.body;
 
-module.exports = { registerFarmer, sendOtp, loginFarmer, getTraders, updateProfile, changePassword, logout }
+
+        if (!farmer) {
+            return res.status(400).json({ message: "Farmer is not valid" });
+        }
+
+        if (!id || !amountPaid) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // const subscriptionExists = await SubscribedPeople.findOne({ buyerId: farmer._id });
+        // if (subscriptionExists) {
+        //     return res.status(400).json({ message: "Farmer already has an active subscription" });
+        // }
+
+        const subscription = await Subscription.findOne({ _id: id, forWhom: "farmer" });
+        if (!subscription) {
+            return res.status(400).json({ message: "Subscription not found or invalid for farmer" });
+        }
+
+
+        if (Number(amountPaid) !== Number(subscription.amount)) {
+            return res.status(400).json({ message: "Invalid payment amount" });
+        }
+
+        const purchaseDate = new Date();
+        const expiryDate = new Date(purchaseDate);
+        expiryDate.setMonth(expiryDate.getMonth() + Number(subscription.duration));
+
+        farmer.isSubscribed = true
+        farmer.subscriptionId = subscription._id,
+        farmer.amount = amountPaid
+        farmer.duration = subscription.duration;
+        farmer.expiryDate = expiryDate;
+
+        await farmer.save();
+
+        res.status(200).json({
+            message: "Subscription purchased successfully"
+        });
+
+    } catch (error) {
+        console.error("Error in buySubscription:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+cron.schedule("* * * * *", async () => {
+  try {
+    const currentDate = new Date();
+
+    const expiredFarmers = await Farmer.updateMany(
+      { expiryDate: { $lt: currentDate }, isSubscribed: true },
+      { $set: { isSubscribed: false } }
+    );
+
+    console.log(
+      `Cron Job: ${expiredFarmers.modifiedCount} farmers unsubscribed automatically.`
+    );
+  } catch (error) {
+    console.error("Cron job error:", error);
+  }
+});
+
+
+
+module.exports = { registerFarmer, sendOtp, loginFarmer, getTraders, updateProfile, changePassword, logout, buySubscription }

@@ -40,7 +40,28 @@ const farmerSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
-    }
+    },
+    isSubscribed: {
+        type: Boolean,
+        default: true,
+    },
+    duration: {
+        type: Number,
+        default: 1
+    },
+    subscriptionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: null,
+        // required : true
+    },
+    amount: {
+        type: Number,
+        default: 0,
+    },
+    expiryDate: {
+        type: Date,
+        required: true
+    },
 },
     {
         timestamps: true,

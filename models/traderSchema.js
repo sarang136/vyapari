@@ -63,6 +63,27 @@ const traderSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    expiryDate: {
+        type: Date,
+        required: true
+    },
+    isSubscribed: {
+        type: Boolean,
+        default: true,
+    },
+    duration: {
+        type: Number,
+        default: 1
+    },
+    subscriptionId:{
+        type : mongoose.Schema.Types.ObjectId,
+        default : null,
+        // required : true
+    },
+    amount:{
+        type : Number,
+        default : 0,
     }
 },
     {

@@ -8,6 +8,10 @@ const fs = require("fs");
 const Otp = require('../models/otpSchema');
 const twilio = require('twilio');
 const uploadTheImage = require("../utils/cloudinary");
+const Subscription = require('../models/subscriptionsModel')
+const SubscribedPeople = require('../models/subscribedPeople');
+const cron = require("node-cron");
+const { default: mongoose } = require('mongoose');
 
 const account_sid = process.env.ACCOUNT_SID
 const auth_token = process.env.AUTH_TOKEN
@@ -16,31 +20,32 @@ const twilioClient = new twilio(account_sid, auth_token)
 
 const registerTrader = async (req, res) => {
   try {
-    const { traderName, traderEmail, traderPassword, traderAddress, traderArea, traderContact } = req.body;
+    const { traderName, traderEmail, traderPassword, traderAddress, traderArea, traderContact, duration } = req.body;
 
     if (!traderName || !traderEmail || !traderAddress || !traderArea || !traderContact) {
-      return res.status(400).json({ message: "Name, email and password are required" });
+      return res.status(400).json({ message: "Name, email, and contact are required" });
     }
 
     const existsInAnotherSchema = await Farmer.findOne({ farmerContact: traderContact });
     if (existsInAnotherSchema) {
-      return res.status(400).json({ message: "User Already exists as farmer" });
-    }
-    const existingTrader = await Trader.findOne({ traderEmail });
-    const existingTraderByNumber = await Trader.findOne({ traderContact });
-    if (existingTrader || existingTraderByNumber) {
-      return res.status(409).json({ message: "User already Exists" });
+      return res.status(400).json({ message: "User already exists as farmer" });
     }
 
+    const existingTrader = await Trader.findOne({ $or: [{ traderEmail }, { traderContact }] });
+    if (existingTrader) {
+      return res.status(409).json({ message: "User already exists" });
+    }
 
     let traderProfileImage = null;
     if (req.file) {
       const uploadResult = await uploadTheImage(req.file.path);
       traderProfileImage = uploadResult?.secure_url;
-
-
       fs.unlinkSync(req.file.path);
     }
+
+    const createdAt = new Date();
+    const expiryDate = new Date(createdAt);
+    expiryDate.setMonth(expiryDate.getMonth() + (duration || 1));
 
     const trader = new Trader({
       traderName,
@@ -50,12 +55,14 @@ const registerTrader = async (req, res) => {
       traderArea,
       traderContact,
       traderProfileImage,
+      duration: duration || 1,
+      expiryDate,
     });
 
     await trader.save();
     res.status(201).json({ message: "Trader registered successfully", data: trader });
+
   } catch (error) {
-    // console.error("Error in registerTrader:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -475,6 +482,85 @@ const updatepaymentStatus = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const buySubscriptions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const trader = req.trader;
+    const { amountPaid } = req.body;
+
+    if (!trader) {
+      return res.status(400).json({ message: "Trader is not valid" });
+    }
+
+    // const alreadySubscribed = await Trader.findOne({_id : trader._id, subscriptionId: { $ne: null }})
+    // if(alreadySubscribed){
+    //   return res.status(400).json({message : "Trader have already subscribed to a plan"})
+    // }
+
+    if (!id || !amountPaid) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const subscription = await Subscription.findOne({ _id: id, forWhom: "trader" });
+    if (!subscription) {
+      return res.status(400).json({ message: "Subscription invalid" });
+    }
 
 
-module.exports = { updatepaymentStatus, deleteProduct, GetProductsById, GetProducts, registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, getFarmers, sendOtp, getAllVehicles };
+    if (Number(amountPaid) !== Number(subscription.amount)) {
+      return res.status(400).json({ message: "Amount is not valid" });
+    }
+
+
+    const purchaseDate = new Date();
+    const expiryDate = new Date(purchaseDate);
+    expiryDate.setMonth(expiryDate.getMonth() + Number(subscription.duration));
+
+    trader.isSubscribed = true
+    trader.subscriptionId = subscription._id,
+      trader.amount = amountPaid
+    trader.duration = subscription.duration;
+    trader.expiryDate = expiryDate;
+    await trader.save();
+
+    res.status(200).json({
+      message: "Subscription purchased successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+cron.schedule("* * * * *", async () => {
+  try {
+    const currentDate = new Date();
+
+    const expiredTraders = await Trader.updateMany(
+      { expiryDate: { $lt: currentDate }, isSubscribed: true },
+      { $set: { isSubscribed: false } }
+    );
+
+      console.log(
+      `Cron Job: ${
+        expiredTraders.modifiedCount || expiredTraders.nModified || 0
+      } traders unsubscribed automatically.`
+    );
+
+    const expiredFarmers = await Farmer.updateMany(
+      { expiryDate: { $lt: currentDate }, isSubscribed: true },
+      { $set: { isSubscribed: false } }
+    );
+
+    console.log(
+      `Cron Job: ${expiredFarmers.modifiedCount || expiredFarmers.nModified || 0
+      } farmers unsubscribed automatically.`
+    );
+  } catch (error) {
+    console.error("Cron job error:", error);
+  }
+});
+
+
+module.exports = { updatepaymentStatus, deleteProduct, GetProductsById, GetProducts, registerTrader, loginTrader, deleteGrade, updateGradebyId, addProduct, logout, addVehicle, updateTrader, changeTraderPassword, getFarmers, sendOtp, getAllVehicles, buySubscriptions };

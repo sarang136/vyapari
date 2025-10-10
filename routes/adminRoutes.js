@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, logout, getAllProducts, deleteFarmer, deleteTrader } = require('../controllers/adminController');
+const { registerAdmin, login, getAllTraders, getAllFarmers, blockTrader, blockFarmer, logout, getAllProducts, deleteFarmer, deleteTrader, addSubscriptions, getAllSubscriptions, deleteSubscriptions } = require('../controllers/adminController');
 const { authMiddleware } = require('../middlewares/auth');
 const { sendOtp } = require('../controllers/adminController');
 const adminRouter  =  express.Router();
@@ -15,5 +15,11 @@ adminRouter.put('/:status/trader/:traderId', authMiddleware, blockTrader)
 adminRouter.put('/:status/farmer/:farmerId', authMiddleware, blockFarmer)
 adminRouter.get('/get-all-products', authMiddleware, getAllProducts)
 adminRouter.post('/logout', logout)
+
+// New apis
+adminRouter.post('/add-subscriptions',authMiddleware, addSubscriptions)
+adminRouter.get('/get-subscriptions',authMiddleware, getAllSubscriptions)
+adminRouter.delete('/delete-subscriptions/:id',authMiddleware, deleteSubscriptions)
+
 
 module.exports = adminRouter;
